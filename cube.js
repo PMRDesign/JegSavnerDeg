@@ -24,7 +24,7 @@ const CLICK_CURSOR = "url('./assets/cursor.svg') 6 2, pointer";
 // The camera moves toward/away from the target as you wheel-zoom.
 // These two values are the "hard stops" for how close/far you can get.
 const minZoomDistance = 1.5;  // move closer than this? no.
-const maxZoomDistance = 10.0;  // move farther than this? no.
+const maxZoomDistance = 15.0;  // move farther than this? no.
 // ---------------------------------------------
 
 // Renderer
@@ -75,8 +75,8 @@ function makeFaceMaterial(label, opts = {}) {
 
   return new THREE.MeshStandardMaterial({
     map: tex,
-    metalness: 0.35, // ↑ more mirror-like if higher (0..1)
-    roughness: 0.12  // ↓ shinier if lower (0..1)
+    metalness: 0.15, // ↑ more mirror-like if higher (0..1)
+    roughness: 0.22  // ↓ shinier if lower (0..1)
   });
 }
 
