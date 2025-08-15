@@ -20,6 +20,10 @@
       background: rgba(30,30,36,.9); color:#fff; padding:8px 12px; border-radius:10px;
       font-size:13px; display:none;
     }
+    #health {
+      position: fixed; top: 8px; right: 8px; background: rgba(0,0,0,.6);
+      color:#cfe3ff; font: 12px/1.4 system-ui, sans-serif; padding:6px 8px; border-radius:8px;
+    }
     button {
       background:#2a2a33; color:#eee; border:1px solid #3a3a46; border-radius:10px; padding:6px 10px; cursor:pointer;
     }
@@ -28,6 +32,7 @@
 </head>
 <body>
   <canvas id="scene" aria-label="Interactive 3D box"></canvas>
+  <div id="health">Loading…</div>
   <div class="ui">
     <span>🖱️ drag = rotate</span>
     <span>🖱️ wheel = zoom</span>
@@ -36,11 +41,23 @@
   </div>
   <div id="toast" class="toast" aria-live="assertive"></div>
 
-  <!-- Libraries -->
-  <script src="https://unpkg.com/three@0.164.1/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.164.1/examples/js/controls/OrbitControls.js"></script>
+  <!-- Libraries (switch to jsDelivr) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.164.1/examples/js/controls/OrbitControls.js"></script>
 
-  <!-- Your cube logic -->
-  <script src="cube.js"></script>
+  <!-- Your cube logic (add a cache-busting query to avoid old cached file) -->
+  <script src="cube.js?v=2"></script>
+
+  <!-- Health check: show if THREE loaded -->
+  <script>
+    (function(){
+      const h = document.getElementById('health');
+      if (window.THREE) {
+        h.textContent = 'THREE loaded ✓  |  Open DevTools → Console for logs';
+      } else {
+        h.textContent = 'THREE not loaded ✗  — check network/console';
+      }
+    })();
+  </script>
 </body>
 </html>
