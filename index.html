@@ -2,46 +2,96 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow"><!-- remove when ready for indexing -->
   <title>The Space I Shape Turns</title>
+  <link rel="icon" href="data:,"><!-- silence favicon 404 -->
   <style>
     :root { color-scheme: dark; }
-    html, body { height: 100%; margin: 0; background:#0f0f12; }
-    #scene { position: fixed; inset: 0; display:block; }
-    .ui {
-      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
-      background: rgba(20,20,24,.7); backdrop-filter: blur(6px);
-      padding: 10px 14px; border-radius: 12px; font-size: 14px; color: #eaeaea;
-      display: flex; gap: 10px; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,.35);
-    }
-    .toast {
-      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-      background: rgba(30,30,36,.9); color:#fff; padding:8px 12px; border-radius:10px;
-      font-size:13px; display:none;
+    html, body { height: 100%; margin: 0; background: #0f0f12; }
+    #scene { position: fixed; inset: 0; display: block; }
+    #hint {
+      position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+      background: rgba(20,20,24,.7); color:#eaeaea; font: 14px system-ui, sans-serif;
+      padding: 8px 12px; border-radius: 10px; backdrop-filter: blur(6px);
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
     }
     #health {
       position: fixed; top: 8px; right: 8px; background: rgba(0,0,0,.6);
-      color:#cfe3ff; font: 12px/1.4 system-ui, sans-serif; padding:6px 8px; border-radius:8px;
+      color:#cfe3ff; font: 12px system-ui, sans-serif; padding:6px 8px; border-radius:8px;
     }
-    button {
-      background:#2a2a33; color:#eee; border:1px solid #3a3a46; border-radius:10px; padding:6px 10px; cursor:pointer;
-    }
-    button:hover { filter: brightness(1.1); }
   </style>
 </head>
 <body>
   <canvas id="scene" aria-label="Interactive 3D box"></canvas>
+  <div id="hint">🖱️ drag = rotate · 🖱️ wheel = zoom · 👆 click the cube</div>
   <div id="health">Loading…</div>
-  <div class="ui">
-    <span>🖱️ drag = rotate</span>
-    <span>🖱️ wheel = zoom</span>
-    <span>👆 click the cube</span>
-    <button id="reset">Center view</button>
-  </div>
-  <div id="toast" class="toast" aria-live="assertive"></div>
 
-  <!-- One clean module import (no globals needed) -->
-  <script type="module" src="lib/cube.mjs?v=1"></script>
+  <!-- Inline ES module: no extra files to manage -->
+  <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.179.1/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.179.1/examples/jsm/controls/OrbitControls.js';
+
+    const health = document.getElementById('health');
+    const canvas = document.getElementById('scene');
+
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0x0f0f12, 1);
+
+    // Scene & Camera
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
+    camera.position.set(2.6, 1.8, 3.2);
+
+    // Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const key = new THREE.DirectionalLight(0xfff2e0, 1.0); key.position.set(3,4,2); scene.add(key);
+
+    // Cube
+    const cube = new THREE.Mesh(
+      new THREE.BoxGeometry(1.6, 1.6, 1.6),
+      new THREE.MeshStandardMaterial({ color: 0x6aa8ff, roughness: 0.35, metalness: 0.05 })
+    );
+    scene.add(cube);
+
+    // Animate
+    function tick(){
+      requestAnimationFrame(tick);
+      cube.rotation.y += 0.01;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    tick();
+
+    // Resize
+    addEventListener('resize', () => {
+      renderer.setSize(innerWidth, innerHeight);
+      camera.aspect = innerWidth/innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    // Click feedback (for wiring to your media later)
+    const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
+    renderer.domElement.addEventListener('click', (ev) => {
+      const r = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
+      pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObject(cube, false)[0];
+      if (hit) {
+        health.textContent = 'Cube clicked ✓';
+        setTimeout(() => health.textContent = 'Scene running ✓', 1200);
+      }
+    });
+
+    health.textContent = 'Scene running ✓';
+  </script>
 </body>
 </html>
