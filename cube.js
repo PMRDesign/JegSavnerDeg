@@ -21,17 +21,15 @@ const routes = {
 const CLICK_CURSOR = "url('./assets/cursor.svg') 6 2, pointer";
 
 // ---------- ZOOM LIMITS (wheel zoom) ----------
-// The camera moves toward/away from the target as you wheel-zoom.
-// These two values are the "hard stops" for how close/far you can get.
-const minZoomDistance = 1.5;  // move closer than this? no.
-const maxZoomDistance = 15.0;  // move farther than this? no.
+const minZoomDistance = 1.5;   // absolute zoom-in stop
+const maxZoomDistance = 15.0;  // absolute zoom-out stop
 // ---------------------------------------------
 
-// Renderer
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+// Renderer (transparent so CSS gradient shows through)
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0x0f0f12, 1);
+renderer.setClearColor(0x000000, 0); // fully transparent
 
 // Scene & camera
 const scene = new THREE.Scene();
@@ -40,19 +38,25 @@ const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerH
 // Initial camera position (feel free to tune)
 camera.position.set(3.2, 2.0, 4.6);
 
-// Controls: we keep wheel zoom only; no camera rotate/pan (we rotate the cube instead)
+// Controls: wheel zoom only; we rotate the cube instead of the camera
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.enableRotate = false;
 controls.enablePan = false;
-controls.minDistance = minZoomDistance; // ← absolute zoom-in stop
-controls.maxDistance = maxZoomDistance; // ← absolute zoom-out stop
+controls.minDistance = minZoomDistance;
+controls.maxDistance = maxZoomDistance;
 
-// Lights for a gentle shine
+// Lights for a gentle shine (fixed: add the key light to scene + set position)
 scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+
 const key = new THREE.DirectionalLight(0xeacffc, 1.4); // warm key
-const rim = new THREE.DirectionalLight(0x9cc6ff, 0.6); rim.position.set(-2.5, 2.0, -2.5); scene.add(rim);
+key.position.set(3, 4, 2);
+scene.add(key);
+
+const rim = new THREE.DirectionalLight(0x9cc6ff, 0.6); // cool rim
+rim.position.set(-2.5, 2.0, -2.5);
+scene.add(rim);
 
 // Flat label face, with a subtle shiny material (no vignette)
 function makeFaceMaterial(label, opts = {}) {
@@ -85,17 +89,15 @@ const cube = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.9, 1.9), materials);
 scene.add(cube);
 
 // ---------- STARTING ORIENTATION (radians) ----------
-// Think of these as designer knobs:
+// rotation.x → tilt up/down  (− tilts top away; + tilts top toward you)
+// rotation.y → turn left/right around vertical axis
+// rotation.z → twist clockwise/counterclockwise facing you
 //
-// rotation.x  → tilt up/down  (− tilts top away; + tilts top toward you)
-// rotation.y  → turn left/right around vertical axis
-// rotation.z  → twist clockwise/counterclockwise facing you
-//
-// Examples:
-//   cube.rotation.set(-0.15, 0.35, 0);  // see a bit of top + right side
-//   cube.rotation.set(0,      0.25, 0); // straight, turned a little right
-//   cube.rotation.set(0,      0,     0); // perfectly straight on
-cube.rotation.set(0, 2, 0); // ← current choice: straight-on
+// Examples you can try:
+// cube.rotation.set(-0.15, 0.35, 0);  // see a bit of top + right side
+// cube.rotation.set(0,      0.25, 0); // straight, turned a little right
+// cube.rotation.set(0,      0,     0); // perfectly straight on
+cube.rotation.set(0, 2, 0); // current choice: turned ~2 rad (~114°) around Y
 // ----------------------------------------------------
 
 // -------- Feel / motion parameters --------
@@ -190,8 +192,7 @@ renderer.domElement.addEventListener("click", (ev) => {
 });
 
 // ===== Drag to rotate with inertia =====
-// Now: clicking the CUBE *outside* the 60% center ALSO starts a scrub.
-// (Previously, only background started scrubbing.)
+// Clicking the CUBE outside the 60% center also starts a scrub.
 let lastMoveTime = 0;
 
 renderer.domElement.addEventListener("mousedown", (ev) => {
@@ -250,4 +251,4 @@ addEventListener("mouseup", endScrub);
 renderer.domElement.addEventListener("mouseleave", endScrub);
 
 if (health) health.textContent = "Drag Cube — Spin Menu.";
-console.log("[cube] updated: annotated start pose, 0.985 glide, cube-edge drag, zoom limits exposed");
+console.log("[cube] updated: transparent renderer + key light fix");
