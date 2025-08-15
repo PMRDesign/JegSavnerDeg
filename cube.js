@@ -23,8 +23,8 @@ const CLICK_CURSOR = "url('./assets/cursor.svg') 6 2, pointer";
 // ---------- ZOOM LIMITS (wheel zoom) ----------
 // The camera moves toward/away from the target as you wheel-zoom.
 // These two values are the "hard stops" for how close/far you can get.
-const minZoomDistance = 0.5;  // move closer than this? no.
-const maxZoomDistance = 8.0;  // move farther than this? no.
+const minZoomDistance = 1.5;  // move closer than this? no.
+const maxZoomDistance = 10.0;  // move farther than this? no.
 // ---------------------------------------------
 
 // Renderer
