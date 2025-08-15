@@ -3,33 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="robots" content="noindex, nofollow"><!-- remove when ready -->
   <title>The Space I Shape Turns</title>
-  <link rel="icon" href="data:,"><!-- silence favicon 404 -->
+  <link rel="icon" href="data:,"><!-- no favicon warning -->
   <style>
-    :root { color-scheme: dark; }
-    html, body { height: 100%; margin: 0; background:#0f0f12; }
-    #scene { position: fixed; inset: 0; display:block; }
+    html, body { height: 100%; margin: 0; background: #0f0f12; }
+    #scene { position: fixed; inset: 0; display: block; }
     #health {
-      position: fixed; top: 8px; right: 8px; background: rgba(0,0,0,.6);
-      color:#cfe3ff; font: 12px system-ui, sans-serif; padding:6px 8px; border-radius:8px;
+      position: fixed; top: 8px; right: 8px;
+      background: rgba(0,0,0,.6); color:#cfe3ff;
+      font: 12px system-ui, sans-serif; padding:6px 8px; border-radius:8px;
     }
   </style>
 </head>
 <body>
-  <canvas id="scene" aria-label="Interactive 3D box"></canvas>
+  <canvas id="scene"></canvas>
   <div id="health">Loading…</div>
 
-  <!-- Inline module using dynamic imports with FULL URLs -->
+  <!-- Inline module: imports directly from CDN -->
   <script type="module">
+    import * as THREE from 'https://unpkg.com/three@0.179.1/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.179.1/examples/jsm/controls/OrbitControls.js';
+
     const health = document.getElementById('health');
-
-    // 1) Dynamically import Three + Controls with absolute URLs (cache-busted)
-    const THREE = await import('https://unpkg.com/three@0.179.1/build/three.module.js?v=20250815');
-    const { OrbitControls } = await import('https://unpkg.com/three@0.179.1/examples/jsm/controls/OrbitControls.js?v=20250815');
-
-    // 2) Set up renderer/scene/camera
     const canvas = document.getElementById('scene');
+
     const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -42,18 +39,17 @@
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // 3) Lights
     scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const key = new THREE.DirectionalLight(0xfff2e0, 1.0); key.position.set(3,4,2); scene.add(key);
+    const key = new THREE.DirectionalLight(0xfff2e0, 1.0); 
+    key.position.set(3,4,2); 
+    scene.add(key);
 
-    // 4) Cube
     const cube = new THREE.Mesh(
       new THREE.BoxGeometry(1.6,1.6,1.6),
       new THREE.MeshStandardMaterial({ color: 0x6aa8ff, roughness: 0.35, metalness: 0.05 })
     );
     scene.add(cube);
 
-    // 5) Animate
     function tick(){
       requestAnimationFrame(tick);
       cube.rotation.y += 0.01;
@@ -62,25 +58,10 @@
     }
     tick();
 
-    // 6) Resize
-    addEventListener('resize', ()=>{
-      renderer.setSize(innerWidth, innerHeight);
-      camera.aspect = innerWidth/innerHeight;
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth/window.innerHeight;
       camera.updateProjectionMatrix();
-    });
-
-    // 7) Click feedback (for wiring to your media later)
-    const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
-    renderer.domElement.addEventListener('click', (ev)=>{
-      const r = renderer.domElement.getBoundingClientRect();
-      pointer.x = ((ev.clientX - r.left)/r.width)*2 - 1;
-      pointer.y = -((ev.clientY - r.top)/r.height)*2 + 1;
-      raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObject(cube, false)[0];
-      if (hit) {
-        health.textContent = 'Cube clicked ✓';
-        setTimeout(() => health.textContent = 'Scene running ✓', 1200);
-      }
     });
 
     health.textContent = 'Scene running ✓';
