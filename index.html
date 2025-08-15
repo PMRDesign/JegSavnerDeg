@@ -19,55 +19,7 @@
   <canvas id="scene" aria-label="Interactive 3D box"></canvas>
   <div id="health">Loading…</div>
 
-  <!-- Inline module with esm.sh URLs (no bare "three") -->
-  <script type="module">
-    // Use esm.sh to resolve npm packages to browser-friendly URLs
-    const threeUrl = 'https://esm.sh/three@0.179.1';
-    const controlsUrl = 'https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js';
-
-    const THREE = await import(`${threeUrl}?dev&external=`);
-    const { OrbitControls } = await import(`${controlsUrl}?dev&external=`);
-
-    const health = document.getElementById('health');
-    const canvas = document.getElementById('scene');
-
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x0f0f12, 1);
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
-    camera.position.set(2.6, 1.8, 3.2);
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const key = new THREE.DirectionalLight(0xfff2e0, 1.0); key.position.set(3,4,2); scene.add(key);
-
-    const cube = new THREE.Mesh(
-      new THREE.BoxGeometry(1.6,1.6,1.6),
-      new THREE.MeshStandardMaterial({ color: 0x6aa8ff, roughness: 0.35, metalness: 0.05 })
-    );
-    scene.add(cube);
-
-    function tick(){
-      requestAnimationFrame(tick);
-      cube.rotation.y += 0.01;
-      controls.update();
-      renderer.render(scene, camera);
-    }
-    tick();
-
-    addEventListener('resize', () => {
-      renderer.setSize(innerWidth, innerHeight);
-      camera.aspect = innerWidth/innerHeight;
-      camera.updateProjectionMatrix();
-    });
-
-    health.textContent = 'Scene running ✓';
-    console.log('[cube] three from', threeUrl);
-  </script>
+  <!-- Load cube logic as a module -->
+  <script type="module" src="./cube.js?v=1"></script>
 </body>
 </html>
