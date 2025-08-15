@@ -1,0 +1,38 @@
+/* Global reset for this minimal scene */
+html, body {
+  height: 100%;
+  margin: 0;
+}
+
+/* Deep space void with a subtle blue core and darker edges */
+body {
+  background:
+    radial-gradient(circle at 50% 50%,
+      #1a2230 0%,   /* faint blue-gray center glow */
+      #131a26 35%,  /* gently darker ring */
+      #0d131c 65%,  /* deep navy */
+      #05070b 100%  /* almost black corners */
+    ) fixed;
+}
+
+/* Optional extra falloff (very subtle). 
+   Delete this block if you want a perfectly clean gradient. */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 120% at 50% 50%,
+      rgba(0,0,0,0) 0%,
+      rgba(0,0,0,0.06) 45%,
+      rgba(0,0,0,0.18) 72%,
+      rgba(0,0,0,0.32) 100%);
+}
+
+/* Canvas fills the viewport; Three.js draws here.
+   Make sure your renderer uses alpha:true and clearColor alpha = 0 in cube.js. */
+#scene {
+  position: fixed;
+  inset: 0;
+  display: block;
+}
