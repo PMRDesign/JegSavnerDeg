@@ -5,21 +5,12 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>The Space I Shape Turns</title>
   <link rel="icon" href="data:,"><!-- silence favicon 404 -->
-  <style>
-    html, body { height: 100%; margin: 0; background:#0f0f12; }
-    #scene { position: fixed; inset: 0; display:block; }
-    #health {
-      position: fixed; top: 8px; right: 8px;
-      background: rgba(0,0,0,.6); color:#cfe3ff;
-      font: 12px system-ui, sans-serif; padding:6px 8px; border-radius:8px;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <canvas id="scene" aria-label="Interactive 3D box"></canvas>
-  <div id="health">Loading…</div>
 
   <!-- Load cube logic as a module -->
-  <script type="module" src="./cube.js?v=1"></script>
+  <script type="module" src="./cube.js?v=2"></script>
 </body>
 </html>
