@@ -4,7 +4,7 @@ html, body {
   margin: 0;
 }
 
-/* Deep space void with a subtle blue core and darker edges */
+/* Deep space void with a subtle cool core and darker edges */
 body {
   background:
     radial-gradient(circle at 50% 50%,
@@ -15,8 +15,8 @@ body {
     ) fixed;
 }
 
-/* Optional extra falloff (very subtle). 
-   Delete this block if you want a perfectly clean gradient. */
+/* Optional extra falloff; makes corners a touch deeper.
+   Remove this block if you want only the gradient above. */
 body::before {
   content: "";
   position: fixed; inset: 0;
@@ -29,10 +29,21 @@ body::before {
       rgba(0,0,0,0.32) 100%);
 }
 
-/* Canvas fills the viewport; Three.js draws here.
-   Make sure your renderer uses alpha:true and clearColor alpha = 0 in cube.js. */
+/* Starfield underlay sits behind the 3D canvas */
+#stars,
 #scene {
   position: fixed;
   inset: 0;
   display: block;
+}
+
+#stars {
+  pointer-events: none;     /* pass clicks/touches to the cube */
+  opacity: 0.55;            /* subtle; adjust 0.4–0.8 */
+  mix-blend-mode: screen;   /* gentle brightening over the gradient */
+}
+
+/* Let touch drags control rotation without the page scrolling */
+#scene {
+  touch-action: none;
 }
