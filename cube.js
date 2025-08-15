@@ -51,12 +51,6 @@ function makeFaceMaterial(label, color = "#1b1f2a") {
   // background
   ctx.fillStyle = color; ctx.fillRect(0, 0, size, size);
 
-  // subtle vignette
-  const g = ctx.createRadialGradient(size/2, size/2, size*0.2, size/2, size/2, size*0.7);
-  g.addColorStop(0, "rgba(255,255,255,0.06)");
-  g.addColorStop(1, "rgba(0,0,0,0.25)");
-  ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
-
   // label
   ctx.fillStyle = "#eaeaf5";
   ctx.font = "600 56px system-ui, -apple-system, Segoe UI, Roboto, sans-serif";
@@ -68,8 +62,8 @@ function makeFaceMaterial(label, color = "#1b1f2a") {
 
   return new THREE.MeshStandardMaterial({
     map: tex,
-    metalness: 0.04,
-    roughness: 0.42,
+    metalness: 0.42,
+    roughness: 0.0,
   });
 }
 
