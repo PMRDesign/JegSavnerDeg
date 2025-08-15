@@ -24,8 +24,8 @@ const CLICK_CURSOR = "url('./assets/cursor.svg') 6 2, pointer";
 
 // ---------- ZOOM LIMITS (wheel zoom) ----------
 // Camera distance clamps (hard stops) while wheel-zooming.
-const minZoomDistance = 1.5;   // zoom-in limit (closer is blocked)
-const maxZoomDistance = 15.0;  // zoom-out limit (farther is blocked)
+const minZoomDistance = 2.5;   // zoom-in limit (closer is blocked)
+const maxZoomDistance = 22.5;  // zoom-out limit (farther is blocked)
 // ---------------------------------------------
 
 // Renderer — transparent so CSS gradient and starfield show through
