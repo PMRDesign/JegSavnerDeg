@@ -1,36 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex, nofollow"> <!-- prevents search indexing for now -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Remove this meta when you're ready to be indexed -->
+  <meta name="robots" content="noindex, nofollow">
   <title>A Box for My Mother</title>
   <style>
-    body {
-      margin: 0;
-      font-family: system-ui, sans-serif;
-      background: linear-gradient(120deg, #1a1a1a, #333);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      text-align: center;
+    :root { color-scheme: dark; }
+    html, body { height: 100%; margin: 0; }
+    body { font-family: system-ui, sans-serif; background:#0f0f12; }
+    #scene { position: fixed; inset: 0; }
+    .ui {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+      background: rgba(20,20,24,.7); backdrop-filter: blur(6px);
+      padding: 10px 14px; border-radius: 12px; font-size: 14px; color: #eaeaea;
+      display: flex; gap: 10px; align-items: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
     }
-    h1 {
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
+    .badge { opacity:.8; }
+    .toast {
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+      background: rgba(30,30,36,.9); color:#fff; padding:8px 12px; border-radius:10px;
+      font-size: 13px; display:none;
     }
-    p {
-      font-size: 1.1rem;
-      max-width: 500px;
+    a { color:#b7c9ff; text-decoration: none; }
+    button {
+      background:#2a2a33; color:#eee; border:1px solid #3a3a46; border-radius: 10px;
+      padding:6px 10px; cursor:pointer;
     }
+    button:hover { filter: brightness(1.1); }
   </style>
 </head>
 <body>
-  <main>
-    <h1>A Box for My Mother</h1>
-    <p>This is a placeholder for an interactive 3D memory box — coming soon.</p>
-  </main>
+  <canvas id="scene" aria-label="Interactive 3D box"></canvas>
+  <div class="ui" role="region" aria-live="polite">
+    <span class="badge">🖱️ drag = rotate</span>
+    <span class="badge">🖱️ wheel = zoom</span>
+    <span class="badge">👆 click a face</span>
+    <button id="reset">Center view</button>
+  </div>
+  <div id="toast" class="toast" aria-live="assertive"></div>
+
+  <!-- Three.js + OrbitControls from CDN -->
+  <script type="module">
+    import * as THREE from "https://unpkg.com/three@0.164.1/build/three.module.js";
+    import { OrbitControls } from "https://unpkg.com/three@0.164.1/examples/jsm/controls/OrbitControls.js";
+
+    // Basic setup
+    const canvas = document.getElementById('scene');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f0f12);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
+    camera.position.set(2.6, 1.8, 3.2);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.rotateSpeed = 0.6;
+    controls.minDistance = 1.5;
+    controls.maxDistance = 8;
+
+    // Lighting: soft, warmish
+    const ambient = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambient);
+    const key = new THREE.DirectionalLight(0xfff2e0, 1.0); key.position.set(3, 4, 2); scene.add(key);
+    const rim = new THREE.DirectionalLight(0xbad4ff, 0.7); rim.position.set(-3, 2, -3); scene.add(rim);
+
+    // Cube with six materials (placeholders for faces)
+    const faceLabels = ["Front","Back","Left","Right","Top","Bottom"];
+    const colors = [0x9aa4ff,0xffb3b3,0x9fe0c6,0xf4d88a,0xcaa8f3,0x86c5f4];
+
+    const materials = faceLabels.map((label, i) => {
+      const mat = new THREE.MeshStandardMaterial({ color: colors[i], metalness: 0.05, roughness: 0.35 });
+      // Add subtle face label using a canvas texture (no external assets)
+      const size = 256;
+      const c = document.createElement('canvas'); c.width = c.height = size;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#00000022';
+      ctx.fillRect(0,0,size,size);
+      ctx.fillStyle = '#ffffffcc';
+      ctx.font = 'bold 32px system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(label, size/2, size/2);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      mat.map = tex;
+      return mat;
+    });
+
+    const cube = new THREE.Mesh(new THREE.BoxGeometry(1.6,1.6,1.6), materials);
+    scene.add(cube);
+
+    // Subtle idle spin (stops while user drags)
+    let autoRotate = true;
+    function animate() {
+      requestAnimationFrame(animate);
+      if (autoRotate) cube.rotation.y += 0.005;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // Pause idle spin during user interaction
+    controls.addEventListener('start', () => autoRotate = false);
+    controls.addEventListener('end',   () => setTimeout(()=>autoRotate = true, 1200));
+
+    // Resize handling
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    // Raycasting to detect face clicks
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    const toast = document.getElementById('toast');
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.style.display = 'block';
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(()=> toast.style.display = 'none', 1400);
+    }
+
+    function onClick(ev) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObject(cube, false);
+      if (hits.length) {
+        // Determine which face index within the box (0-5)
+        const faceIndex = Math.floor(hits[0].faceIndex / 2); // two triangles per face
+        const label = faceLabels[faceIndex];
+
+        // TODO: here we will open your media (image/audio/text) per face
+        // e.g., openModal('audio/mother-fragment-1.mp3')
+        showToast(`You clicked: ${label}`);
+        // Example: navigate to a page/file later
+        // window.location.href = `media/${label.toLowerCase()}.html`;
+      }
+    }
+    renderer.domElement.addEventListener('click', onClick);
+
+    // Reset button
+    document.getElementById('reset').addEventListener('click', () => {
+      controls.reset();
+      camera.position.set(2.6, 1.8, 3.2);
+    });
+  </script>
 </body>
 </html>
