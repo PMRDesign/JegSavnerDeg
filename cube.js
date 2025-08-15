@@ -50,8 +50,7 @@ controls.minDistance = minZoomDistance; // ← absolute zoom-in stop
 controls.maxDistance = maxZoomDistance; // ← absolute zoom-out stop
 
 // Lights for a gentle shine
-scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-const key = new THREE.DirectionalLight(0xfff2e0, 1.0); key.position.set(3, 4, 2); scene.add(key);
+scene.add(new THREE.AmbientLight(0xffffff, 0.75));
 const rim = new THREE.DirectionalLight(0x9cc6ff, 0.6); rim.position.set(-2.5, 2.0, -2.5); scene.add(rim);
 
 // Flat label face, with a subtle shiny material (no vignette)
