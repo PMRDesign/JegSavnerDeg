@@ -27,7 +27,7 @@
   <div id="hint">🖱️ drag = rotate · 🖱️ wheel = zoom · 👆 click the cube</div>
   <div id="health">Loading…</div>
 
-  <!-- Inline ES module: no extra files to manage -->
+  <!-- Inline ES module: imports from CDN -->
   <script type="module">
     import * as THREE from 'https://unpkg.com/three@0.179.1/build/three.module.js';
     import { OrbitControls } from 'https://unpkg.com/three@0.179.1/examples/jsm/controls/OrbitControls.js';
@@ -77,7 +77,7 @@
       camera.updateProjectionMatrix();
     });
 
-    // Click feedback (for wiring to your media later)
+    // Click feedback
     const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
     renderer.domElement.addEventListener('click', (ev) => {
       const r = renderer.domElement.getBoundingClientRect();
