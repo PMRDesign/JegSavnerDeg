@@ -310,3 +310,84 @@ renderer.domElement.addEventListener('touchcancel', endTouch, { passive: false }
 // (Optional) tiny status for your own testing
 if (health) health.textContent = "";
 console.log("[cube] ready: transparent renderer, star-ready CSS, inertia + touch, zoom limits exposed");
+
+// ===== Bilinear corner weights (Kongsvinger, Berlin, Rio, Sydney) =====
+const wTL = document.getElementById('w-tl');
+const wTR = document.getElementById('w-tr');
+const wBL = document.getElementById('w-bl');
+const wBR = document.getElementById('w-br');
+
+// Helper: clamp 0..1
+const clamp01 = v => Math.max(0, Math.min(1, v));
+
+function updateCornerWeightsFromClient(clientX, clientY) {
+  if (!canvas) return;
+  const rect = canvas.getBoundingClientRect();
+
+  // Normalize cursor to [0,1] across the interactive canvas area
+  const x = clamp01((clientX - rect.left) / rect.width);
+  const y = clamp01((clientY - rect.top) / rect.height);
+
+  // Bilinear weights
+  let k = (1 - x) * (1 - y); // Kongsvinger (top-left)
+  let b = x * (1 - y);       // Berlin (top-right)
+  let r = (1 - x) * y;       // Rio (bottom-left)
+  let s = x * y;             // Sydney (bottom-right)
+
+  // Scale to 0..100 and round to ints
+  let K = Math.round(k * 100);
+  let B = Math.round(b * 100);
+  let R = Math.round(r * 100);
+  let S = Math.round(s * 100);
+
+  // Optional: ensure exact sum = 100 (fix rounding residual on largest)
+  const sum = K + B + R + S;
+  let residual = 100 - sum;
+  if (residual !== 0) {
+    // find index of largest weight
+    const arr = [K, B, R, S];
+    let maxIdx = 0;
+    for (let i = 1; i < 4; i++) if (arr[i] > arr[maxIdx]) maxIdx = i;
+    arr[maxIdx] += residual;
+    [K, B, R, S] = arr;
+  }
+
+  // Update tiny labels (no % glyphs)
+  if (wTL) wTL.textContent = `Kongsvinger ${K}`;
+  if (wTR) wTR.textContent = `Berlin ${B}`;
+  if (wBL) wBL.textContent = `Rio ${R}`;
+  if (wBR) wBR.textContent = `Sydney ${S}`;
+}
+
+// Mouse: update on move, freeze on leave
+renderer.domElement.addEventListener('mousemove', (ev) => {
+  updateCornerWeightsFromClient(ev.clientX, ev.clientY);
+}, { passive: true });
+
+// Freeze last values on mouseleave (do nothing)
+// If you prefer clearing, uncomment below:
+// renderer.domElement.addEventListener('mouseleave', () => {
+//   if (wTL) wTL.textContent = 'Kongsvinger –';
+//   if (wTR) wTR.textContent = 'Berlin –';
+//   if (wBL) wBL.textContent = 'Rio –';
+//   if (wBR) wBR.textContent = 'Sydney –';
+// }, { passive: true });
+
+// Touch: mirror mouse behavior
+renderer.domElement.addEventListener('touchmove', (ev) => {
+  if (!ev.touches || ev.touches.length === 0) return;
+  const t = ev.touches[0];
+  updateCornerWeightsFromClient(t.clientX, t.clientY);
+  ev.preventDefault();
+}, { passive: false });
+
+// Freeze on touchend/cancel (no clear)
+renderer.domElement.addEventListener('touchend', () => {}, { passive: true });
+renderer.domElement.addEventListener('touchcancel', () => {}, { passive: true });
+
+// Initialize at center so sum=100 on load (50/50 splits)
+(function initWeightsAtCenter(){
+  const rect = canvas.getBoundingClientRect();
+  updateCornerWeightsFromClient(rect.left + rect.width/2, rect.top + rect.height/2);
+})();
+
