@@ -370,3 +370,64 @@ renderer.domElement.addEventListener('touchcancel', endTouch, { passive: false }
 // (Optional) tiny status for your own testing
 if (health) health.textContent = "";
 console.log("[cube] ready: mobile tap-to-open + inertia, desktop hover cursor, transparent renderer");
+
+// ===== Bilinear corner weights (Kongsvinger, Berlin, Rio, Sydney) =====
+const wTL = document.getElementById('w-tl');
+const wTR = document.getElementById('w-tr');
+const wBL = document.getElementById('w-bl');
+const wBR = document.getElementById('w-br');
+
+const clamp01 = v => Math.max(0, Math.min(1, v));
+
+function updateCornerWeightsFromClient(clientX, clientY) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = clamp01((clientX - rect.left) / rect.width);   // 0..1, left→right
+  const y = clamp01((clientY - rect.top)  / rect.height);  // 0..1, top→bottom
+
+  // Bilinear weights
+  let k = (1 - x) * (1 - y); // Kongsvinger (TL)
+  let b = x * (1 - y);       // Berlin (TR)
+  let r = (1 - x) * y;       // Rio (BL)
+  let s = x * y;             // Sydney (BR)
+
+  // Scale to 0..100 (ints)
+  let K = Math.round(k * 100);
+  let B = Math.round(b * 100);
+  let R = Math.round(r * 100);
+  let S = Math.round(s * 100);
+
+  // Ensure exact sum = 100 by fixing largest with residual
+  const sum = K + B + R + S;
+  const residual = 100 - sum;
+  if (residual !== 0) {
+    const arr = [K, B, R, S];
+    let maxIdx = 0;
+    for (let i = 1; i < 4; i++) if (arr[i] > arr[maxIdx]) maxIdx = i;
+    arr[maxIdx] += residual;
+    [K, B, R, S] = arr;
+  }
+
+  if (wTL) wTL.textContent = `Kongsvinger ${K}`;
+  if (wTR) wTR.textContent = `Berlin ${B}`;
+  if (wBL) wBL.textContent = `Rio ${R}`;
+  if (wBR) wBR.textContent = `Sydney ${S}`;
+}
+
+// Mouse: update on move, freeze on leave
+renderer.domElement.addEventListener('mousemove', (ev) => {
+  updateCornerWeightsFromClient(ev.clientX, ev.clientY);
+}, { passive: true });
+
+// Touch: update on move, freeze on end
+renderer.domElement.addEventListener('touchmove', (ev) => {
+  if (!ev.touches || ev.touches.length === 0) return;
+  const t = ev.touches[0];
+  updateCornerWeightsFromClient(t.clientX, t.clientY);
+}, { passive: true });
+
+// Initialize at canvas center so labels aren’t dashes on load
+(function initWeightsAtCenter(){
+  const rect = renderer.domElement.getBoundingClientRect();
+  updateCornerWeightsFromClient(rect.left + rect.width/2, rect.top + rect.height/2);
+})();
+
