@@ -23,7 +23,7 @@ const CLICK_CURSOR = "url('./assets/cursor.svg') 6 2, pointer";
 // ---------- ZOOM LIMITS (wheel zoom) ----------
 // The camera moves toward/away from the target as you wheel-zoom.
 // These two values are the "hard stops" for how close/far you can get.
-const minZoomDistance = 1.5;  // move closer than this? no.
+const minZoomDistance = 0.5;  // move closer than this? no.
 const maxZoomDistance = 8.0;  // move farther than this? no.
 // ---------------------------------------------
 
@@ -95,7 +95,7 @@ scene.add(cube);
 //   cube.rotation.set(-0.15, 0.35, 0);  // see a bit of top + right side
 //   cube.rotation.set(0,      0.25, 0); // straight, turned a little right
 //   cube.rotation.set(0,      0,     0); // perfectly straight on
-cube.rotation.set(0, 0, 0); // ← current choice: straight-on
+cube.rotation.set(0, 2, 0); // ← current choice: straight-on
 // ----------------------------------------------------
 
 // -------- Feel / motion parameters --------
