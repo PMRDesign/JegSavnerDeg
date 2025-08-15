@@ -1,9 +1,11 @@
-// cube.js — annotated start rotation, long glide, cube-edge drag, and configurable zoom limits
+// cube.js — transparent renderer over gradient, menu faces, hover cursor,
+// background/cube-edge drag with inertia, touch support, zoom limits exposed.
 const THREE = await import('https://esm.sh/three@0.179.1');
 const { OrbitControls } = await import('https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js');
 
-const health = document.getElementById('health');
+// Canvas & (optional) debug element
 const canvas = document.getElementById('scene');
+const health = document.getElementById('health'); // safe if missing
 
 // ---------- MENU CONFIG ----------
 const faceLabels = ["Music", "Sketches", "Texts", "Demos", "About", "Notes"];
@@ -21,11 +23,12 @@ const routes = {
 const CLICK_CURSOR = "url('./assets/cursor.svg') 6 2, pointer";
 
 // ---------- ZOOM LIMITS (wheel zoom) ----------
-const minZoomDistance = 1.5;   // absolute zoom-in stop
-const maxZoomDistance = 15.0;  // absolute zoom-out stop
+// Camera distance clamps (hard stops) while wheel-zooming.
+const minZoomDistance = 1.5;   // zoom-in limit (closer is blocked)
+const maxZoomDistance = 15.0;  // zoom-out limit (farther is blocked)
 // ---------------------------------------------
 
-// Renderer (transparent so CSS gradient shows through)
+// Renderer — transparent so CSS gradient and starfield show through
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -38,7 +41,7 @@ const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerH
 // Initial camera position (feel free to tune)
 camera.position.set(3.2, 2.0, 4.6);
 
-// Controls: wheel zoom only; we rotate the cube instead of the camera
+// Controls: wheel zoom only; we rotate the cube (not the camera)
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
@@ -47,7 +50,7 @@ controls.enablePan = false;
 controls.minDistance = minZoomDistance;
 controls.maxDistance = maxZoomDistance;
 
-// Lights for a gentle shine (fixed: add the key light to scene + set position)
+// Lights for a gentle, gallery-like shine
 scene.add(new THREE.AmbientLight(0xffffff, 0.75));
 
 const key = new THREE.DirectionalLight(0xeacffc, 1.4); // warm key
@@ -58,7 +61,7 @@ const rim = new THREE.DirectionalLight(0x9cc6ff, 0.6); // cool rim
 rim.position.set(-2.5, 2.0, -2.5);
 scene.add(rim);
 
-// Flat label face, with a subtle shiny material (no vignette)
+// Flat label face with a subtle shiny material (no vignette)
 function makeFaceMaterial(label, opts = {}) {
   const size = 512;
   const c = document.createElement("canvas");
@@ -93,7 +96,7 @@ scene.add(cube);
 // rotation.y → turn left/right around vertical axis
 // rotation.z → twist clockwise/counterclockwise facing you
 //
-// Examples you can try:
+// Examples:
 // cube.rotation.set(-0.15, 0.35, 0);  // see a bit of top + right side
 // cube.rotation.set(0,      0.25, 0); // straight, turned a little right
 // cube.rotation.set(0,      0,     0); // perfectly straight on
@@ -105,7 +108,7 @@ let showIntroSpin = true;         // one-time hint spin at start
 let introRotationY = 0.010;       // intro spin speed (Y)
 let introRotationX = 0.000;       // intro spin speed (X)
 
-// Drag responsiveness: how much rotation per pixel of mouse movement
+// Drag responsiveness: how much rotation per pixel of gesture
 const dragSensitivity = 0.006;    // try 0.003 (slow) .. 0.012 (snappy)
 
 // Inertia after drag: keeps spinning, then eases out
@@ -153,10 +156,14 @@ window.addEventListener("resize", () => {
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
-function pick(ev) {
+function pick(evOrTouch) {
+  const clientX = evOrTouch.clientX ?? (evOrTouch.touches && evOrTouch.touches[0]?.clientX);
+  const clientY = evOrTouch.clientY ?? (evOrTouch.touches && evOrTouch.touches[0]?.clientY);
+  if (clientX == null || clientY == null) return null;
+
   const r = renderer.domElement.getBoundingClientRect();
-  pointer.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
-  pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+  pointer.x = ((clientX - r.left) / r.width) * 2 - 1;
+  pointer.y = -((clientY - r.top) / r.height) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
   const hit = raycaster.intersectObject(cube, false)[0];
   if (!hit) return null;
@@ -191,7 +198,7 @@ renderer.domElement.addEventListener("click", (ev) => {
   if (dest) window.location.href = dest;
 });
 
-// ===== Drag to rotate with inertia =====
+// ===== Drag to rotate with inertia (mouse) =====
 // Clicking the CUBE outside the 60% center also starts a scrub.
 let lastMoveTime = 0;
 
@@ -199,17 +206,12 @@ renderer.domElement.addEventListener("mousedown", (ev) => {
   const p = pick(ev);
   let startDrag = false;
 
-  if (!p) {
-    // Clicked background → drag
-    startDrag = true;
-  } else if (!p.uv) {
-    // Rare case: no UV, treat as drag
-    startDrag = true;
-  } else {
-    // Clicked cube — only start drag if not inside the central 60%
+  if (!p) startDrag = true;            // background
+  else if (!p.uv) startDrag = true;    // rare: no UV
+  else {
     const { x: u, y: v } = p.uv;
     const inCenter = (u > 0.2 && u < 0.8 && v > 0.2 && v < 0.8);
-    startDrag = !inCenter; // outside center → drag
+    startDrag = !inCenter;             // edges of cube face → rotate
   }
 
   if (startDrag) {
@@ -225,12 +227,12 @@ renderer.domElement.addEventListener("mousemove", (ev) => {
   const dx = ev.movementX || 0;
   const dy = ev.movementY || 0;
 
-  // Update rotation directly
+  // Direct rotation
   const k = dragSensitivity;
-  cube.rotation.y += dx * k; // left/right mouse moves twist around Y
-  cube.rotation.x += dy * k; // up/down moves tilt around X
+  cube.rotation.y += dx * k; // left/right
+  cube.rotation.x += dy * k; // up/down
 
-  // Track velocity for inertia
+  // Velocity for inertia
   vY = dx * k;
   vX = dy * k;
   lastMoveTime = performance.now();
@@ -241,14 +243,70 @@ function endScrub() {
   isScrubbing = false;
   document.body.style.cursor = "";
 
-  // If the mouse actually moved recently, start inertia
+  // If there was movement very recently, start inertia glide
   const elapsed = performance.now() - lastMoveTime;
-  if (elapsed < 120) {
-    inertiaActive = true;
-  }
+  if (elapsed < 120) inertiaActive = true;
 }
 addEventListener("mouseup", endScrub);
 renderer.domElement.addEventListener("mouseleave", endScrub);
 
-if (health) health.textContent = "Drag Cube — Spin Menu.";
-console.log("[cube] updated: transparent renderer + key light fix");
+// ===== Touch support (mirrors mouse behavior) =====
+let lastTouch = null;
+
+renderer.domElement.addEventListener('touchstart', (ev) => {
+  if (!ev.touches || ev.touches.length === 0) return;
+  const t = ev.touches[0];
+
+  const p = pick(t);
+  let startDrag = false;
+  if (!p) startDrag = true;
+  else if (!p.uv) startDrag = true;
+  else {
+    const { x: u, y: v } = p.uv;
+    const inCenter = (u > 0.2 && u < 0.8 && v > 0.2 && v < 0.8);
+    startDrag = !inCenter; // tap-drag edges/background to rotate
+  }
+
+  if (startDrag) {
+    isScrubbing = true;
+    inertiaActive = false;
+    showIntroSpin = false;
+    lastTouch = { x: t.clientX, y: t.clientY, time: performance.now() };
+  }
+  ev.preventDefault();
+}, { passive: false });
+
+renderer.domElement.addEventListener('touchmove', (ev) => {
+  if (!isScrubbing || !ev.touches || ev.touches.length === 0) return;
+  const t = ev.touches[0];
+  const now = performance.now();
+  const dx = t.clientX - (lastTouch?.x ?? t.clientX);
+  const dy = t.clientY - (lastTouch?.y ?? t.clientY);
+
+  const k = dragSensitivity;
+  cube.rotation.y += dx * k;
+  cube.rotation.x += dy * k;
+
+  // approximate per-frame velocity
+  const dt = Math.max(1, (now - (lastTouch?.time ?? now)));
+  vY = (dx * k) * (16 / dt);
+  vX = (dy * k) * (16 / dt);
+
+  lastTouch = { x: t.clientX, y: t.clientY, time: now };
+  ev.preventDefault();
+}, { passive: false });
+
+function endTouch(ev) {
+  if (!isScrubbing) return;
+  isScrubbing = false;
+  // Always give a bit of glide on touch release
+  inertiaActive = true;
+  lastTouch = null;
+  ev && ev.preventDefault();
+}
+renderer.domElement.addEventListener('touchend', endTouch, { passive: false });
+renderer.domElement.addEventListener('touchcancel', endTouch, { passive: false });
+
+// (Optional) tiny status for your own testing
+if (health) health.textContent = "";
+console.log("[cube] ready: transparent renderer, star-ready CSS, inertia + touch, zoom limits exposed");
