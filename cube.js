@@ -51,6 +51,7 @@ controls.maxDistance = maxZoomDistance; // ← absolute zoom-out stop
 
 // Lights for a gentle shine
 scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+const key = new THREE.DirectionalLight(0xeacffc, 1.4); // warm key
 const rim = new THREE.DirectionalLight(0x9cc6ff, 0.6); rim.position.set(-2.5, 2.0, -2.5); scene.add(rim);
 
 // Flat label face, with a subtle shiny material (no vignette)
