@@ -36,28 +36,12 @@
   <div class="ui">
     <span>🖱️ drag = rotate</span>
     <span>🖱️ wheel = zoom</span>
-    <span>👆 click a face</span>
+    <span>👆 click the cube</span>
     <button id="reset">Center view</button>
   </div>
   <div id="toast" class="toast" aria-live="assertive"></div>
 
-<!-- Libraries (local, no CDN) -->
-<script src="./vendor/three.min.js"></script>
-<script src="./vendor/OrbitControls.js"></script>
-
-<!-- Your cube code (single include; bump query to bypass cache) -->
-<script src="cube.js?v=4"></script>
-
-<!-- Health check: show if THREE loaded -->
-<script>
-  (function(){
-    const h = document.getElementById('health');
-    if (window.THREE) {
-      h.textContent = 'THREE loaded ✓  |  Open DevTools → Console for logs';
-    } else {
-      h.textContent = 'THREE not loaded ✗  — check network/console';
-    }
-  })();
-</script>
+  <!-- One clean module import (no globals needed) -->
+  <script type="module" src="lib/cube.mjs?v=1"></script>
 </body>
 </html>
