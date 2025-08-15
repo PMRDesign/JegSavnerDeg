@@ -8,14 +8,14 @@ const canvas = document.getElementById('scene');
 const health = document.getElementById('health'); // safe if missing
 
 // ---------- MENU CONFIG ----------
-const faceLabels = ["Music", "Sketches", "Texts", "Demos", "About", "Notes"];
+const faceLabels = ["Words", "Sounds", "Story", "Motion", "Sketches", "Pieces"];
 const routes = {
-  0: "music/",     // Front
-  1: "sketches/",  // Back
-  2: "texts/",     // Left
-  3: "demos/",     // Right
-  4: "about.html", // Top
-  5: "notes.html"  // Bottom
+  0: "words/",     // Front
+  1: "sounds/",    // Back
+  2: "story/",     // Left
+  3: "motion/",    // Right
+  4: "sketches/",  // Top
+  5: "pieces/"     // Bottom
 };
 // ---------------------------------
 
