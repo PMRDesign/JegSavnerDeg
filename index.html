@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>The Space I Shape Turns</title>
-  <link rel="icon" href="data:,"><!-- no favicon warning -->
+  <link rel="icon" href="data:,"><!-- silence favicon 404 -->
   <style>
-    html, body { height: 100%; margin: 0; background: #0f0f12; }
-    #scene { position: fixed; inset: 0; display: block; }
+    html, body { height: 100%; margin: 0; background:#0f0f12; }
+    #scene { position: fixed; inset: 0; display:block; }
     #health {
       position: fixed; top: 8px; right: 8px;
       background: rgba(0,0,0,.6); color:#cfe3ff;
@@ -16,13 +16,17 @@
   </style>
 </head>
 <body>
-  <canvas id="scene"></canvas>
+  <canvas id="scene" aria-label="Interactive 3D box"></canvas>
   <div id="health">Loading…</div>
 
-  <!-- Inline module: imports directly from CDN -->
+  <!-- Inline module with esm.sh URLs (no bare "three") -->
   <script type="module">
-    import * as THREE from 'https://unpkg.com/three@0.179.1/build/three.module.js';
-    import { OrbitControls } from 'https://unpkg.com/three@0.179.1/examples/jsm/controls/OrbitControls.js';
+    // Use esm.sh to resolve npm packages to browser-friendly URLs
+    const threeUrl = 'https://esm.sh/three@0.179.1';
+    const controlsUrl = 'https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js';
+
+    const THREE = await import(`${threeUrl}?dev&external=`);
+    const { OrbitControls } = await import(`${controlsUrl}?dev&external=`);
 
     const health = document.getElementById('health');
     const canvas = document.getElementById('scene');
@@ -40,9 +44,7 @@
     controls.enableDamping = true;
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const key = new THREE.DirectionalLight(0xfff2e0, 1.0); 
-    key.position.set(3,4,2); 
-    scene.add(key);
+    const key = new THREE.DirectionalLight(0xfff2e0, 1.0); key.position.set(3,4,2); scene.add(key);
 
     const cube = new THREE.Mesh(
       new THREE.BoxGeometry(1.6,1.6,1.6),
@@ -58,13 +60,14 @@
     }
     tick();
 
-    window.addEventListener('resize', () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth/window.innerHeight;
+    addEventListener('resize', () => {
+      renderer.setSize(innerWidth, innerHeight);
+      camera.aspect = innerWidth/innerHeight;
       camera.updateProjectionMatrix();
     });
 
     health.textContent = 'Scene running ✓';
+    console.log('[cube] three from', threeUrl);
   </script>
 </body>
 </html>
