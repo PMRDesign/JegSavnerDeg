@@ -75,8 +75,8 @@ function makeFaceMaterial(label, opts = {}) {
 
   return new THREE.MeshStandardMaterial({
     map: tex,
-    metalness: 0.15, // ↑ more mirror-like if higher (0..1)
-    roughness: 0.22  // ↓ shinier if lower (0..1)
+    metalness: 0.35, // ↑ more mirror-like if higher (0..1)
+    roughness: 0.12  // ↓ shinier if lower (0..1)
   });
 }
 
