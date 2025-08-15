@@ -249,5 +249,5 @@ function endScrub() {
 addEventListener("mouseup", endScrub);
 renderer.domElement.addEventListener("mouseleave", endScrub);
 
-if (health) health.textContent = "Menu ready ✓ — hover center to click, drag edges/background to rotate";
+if (health) health.textContent = "Drag Cube — Spin Menu.";
 console.log("[cube] updated: annotated start pose, 0.985 glide, cube-edge drag, zoom limits exposed");
