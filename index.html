@@ -41,23 +41,23 @@
   </div>
   <div id="toast" class="toast" aria-live="assertive"></div>
 
-  <!-- Libraries (switch to jsDelivr) -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.164.1/examples/js/controls/OrbitControls.js"></script>
+<!-- Libraries (local, no CDN) -->
+<script src="./vendor/three.min.js"></script>
+<script src="./vendor/OrbitControls.js"></script>
 
-  <!-- Your cube logic (add a cache-busting query to avoid old cached file) -->
-  <script src="cube.js?v=2"></script>
+<!-- Your cube code (single include; bump query to bypass cache) -->
+<script src="cube.js?v=4"></script>
 
-  <!-- Health check: show if THREE loaded -->
-  <script>
-    (function(){
-      const h = document.getElementById('health');
-      if (window.THREE) {
-        h.textContent = 'THREE loaded ✓  |  Open DevTools → Console for logs';
-      } else {
-        h.textContent = 'THREE not loaded ✗  — check network/console';
-      }
-    })();
-  </script>
+<!-- Health check: show if THREE loaded -->
+<script>
+  (function(){
+    const h = document.getElementById('health');
+    if (window.THREE) {
+      h.textContent = 'THREE loaded ✓  |  Open DevTools → Console for logs';
+    } else {
+      h.textContent = 'THREE not loaded ✗  — check network/console';
+    }
+  })();
+</script>
 </body>
 </html>
