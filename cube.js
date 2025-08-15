@@ -1,4 +1,4 @@
-// cube.js — 6-face menu cube
+// cube.js — 6-face menu cube with background-drag rotation
 const THREE = await import('https://esm.sh/three@0.179.1');
 const { OrbitControls } = await import('https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js');
 
@@ -7,7 +7,6 @@ const canvas = document.getElementById('scene');
 
 // --------- MENU CONFIG (edit labels/destinations here) ---------
 const faceLabels = ["Music", "Sketches", "Texts", "Demos", "About", "Notes"];
-// Where each face takes you (can be folders with index.html inside)
 const routes = {
   0: "music/",     // Front
   1: "sketches/",  // Back
@@ -29,11 +28,12 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(2.6, 1.8, 3.2);
 
-// Controls (mouse/touch)
+// Controls: keep zoom, but let US rotate the cube ourselves
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
-controls.rotateSpeed = 0.6;
+controls.enableRotate = false;   // <— disable OrbitControls rotation
+controls.enablePan = false;
 controls.minDistance = 1.5;
 controls.maxDistance = 8;
 
@@ -76,17 +76,21 @@ function makeFaceMaterial(label, color = "#1b1f2a") {
 // Materials (one per face)
 const materials = faceLabels.map(lbl => makeFaceMaterial(lbl));
 
-// Cube geometry & mesh
+// Cube
 const cube = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.8, 1.8), materials);
 scene.add(cube);
 
 // --- Feel / motion parameters you can tweak ---
-let rotationSpeedY = 0.010; // left/right idle spin (0.005–0.015 is gentle)
-let rotationSpeedX = 0.000; // up/down idle spin
-const hoverSpinPause = 1200; // ms to wait after user drag before resuming idle
+let rotationSpeedY = 0.010;     // idle spin left/right (gentle: 0.005–0.015)
+let rotationSpeedX = 0.000;     // idle spin up/down
+const hoverSpinPause = 1200;    // ms after user interaction before resuming idle
+const dragSensitivity = 0.006;  // how much the cube follows your hand (try 0.003–0.012)
 // ------------------------------------------------
 
 let autoRotate = true;
+let isScrubbing = false;
+
+// Animate
 function animate() {
   requestAnimationFrame(animate);
   if (autoRotate) {
@@ -98,9 +102,6 @@ function animate() {
 }
 animate();
 
-controls.addEventListener("start", () => autoRotate = false);
-controls.addEventListener("end", () => setTimeout(() => autoRotate = true, hoverSpinPause));
-
 // Resize
 window.addEventListener("resize", () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -108,26 +109,57 @@ window.addEventListener("resize", () => {
   camera.updateProjectionMatrix();
 });
 
-// Click → route
+// Raycaster for hit tests
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
+
+// CLICK → ROUTE (when clicking ON the cube)
 renderer.domElement.addEventListener("click", (ev) => {
+  if (isScrubbing) return; // ignore clicks if we were dragging background
   const r = renderer.domElement.getBoundingClientRect();
   pointer.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
   pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
   const hit = raycaster.intersectObject(cube, false)[0];
   if (!hit) return;
-
-  // faceIndex: two triangles per face, so divide by 2
   const face = Math.floor(hit.faceIndex / 2);
   const dest = routes[face];
-
-  if (dest) {
-    // Navigate. If it’s a folder (like "music/"), it will look for music/index.html
-    window.location.href = dest;
-  }
+  if (dest) window.location.href = dest;
 });
 
-if (health) health.textContent = "Menu ready ✓";
-console.log("[cube] menu cube loaded");
+// ===== Background drag to rotate the cube =====
+function startScrub() {
+  isScrubbing = true;
+  autoRotate = false;
+  document.body.style.cursor = 'grabbing';
+}
+function endScrub() {
+  isScrubbing = false;
+  document.body.style.cursor = '';
+  setTimeout(() => autoRotate = true, hoverSpinPause);
+}
+
+// Start scrub ONLY if we clicked the background (not the cube)
+renderer.domElement.addEventListener('mousedown', (ev) => {
+  const r = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
+  pointer.y = -((ev.clientY - r.top) / r.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const hit = raycaster.intersectObject(cube, false)[0];
+  if (!hit) startScrub();
+});
+
+renderer.domElement.addEventListener('mousemove', (ev) => {
+  if (!isScrubbing) return;
+  // Use movementX/Y (delta since last mousemove) for smooth scrubbing
+  const dx = ev.movementX || 0;
+  const dy = ev.movementY || 0;
+  cube.rotation.y += dx * dragSensitivity;   // horizontal moves twist left/right
+  cube.rotation.x += dy * dragSensitivity;   // vertical moves tilt up/down
+});
+
+addEventListener('mouseup', endScrub);
+renderer.domElement.addEventListener('mouseleave', endScrub);
+
+if (health) health.textContent = "Menu ready ✓ — drag background to rotate";
+console.log("[cube] menu cube with background-drag loaded");
