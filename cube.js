@@ -1,4 +1,4 @@
-// cube.js — clean faces, central-hit routing, background-drag control, one-time idle spin
+// cube.js — clean shine, central hover/click, background-drag, one-time idle spin
 const THREE = await import('https://esm.sh/three@0.179.1');
 const { OrbitControls } = await import('https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js');
 
@@ -17,18 +17,31 @@ const routes = {
 };
 // -------------------------------
 
+// Pixelated hand cursor (SVG data URI)
+const PIXEL_HAND_CURSOR = `url('data:image/svg+xml;utf8,${encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" shape-rendering="crispEdges">
+  <rect width="16" height="16" fill="none"/>
+  <rect x="3" y="2" width="3" height="7" fill="#ffffff"/>
+  <rect x="6" y="4" width="3" height="7" fill="#ffffff"/>
+  <rect x="9" y="6" width="3" height="6" fill="#ffffff"/>
+  <rect x="12" y="8" width="2" height="4" fill="#ffffff"/>
+  <rect x="3" y="9" width="8" height="3" fill="#ffffff"/>
+  <rect x="4" y="12" width="5" height="2" fill="#ffffff"/>
+  <rect x="5" y="14" width="3" height="1" fill="#ffffff"/>
+</svg>`)}') 6 2, pointer`;
+
 // Renderer
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x0f0f12, 1);
 
-// Scene & camera (slightly more zoomed out to start)
+// Scene & camera (more zoomed out; “looking a little upward” at the cube to show bottom)
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(3.2, 2.2, 4.6);
+camera.position.set(3.2, 1.6, 4.6);    // slightly lower Y than before so we see bottom face angle
 
-// Controls: only zoom via wheel; we rotate the cube ourselves
+// Controls: keep wheel zoom; we rotate cube via background drag
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
@@ -37,11 +50,12 @@ controls.enablePan = false;
 controls.minDistance = 1.5;
 controls.maxDistance = 8;
 
-// Lights (kept, but face material ignores light for a clean, flat look)
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-const key = new THREE.DirectionalLight(0xfff2e0, 0.8); key.position.set(3, 4, 2); scene.add(key);
+// Lights for subtle shine
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const key = new THREE.DirectionalLight(0xfff2e0, 1.0); key.position.set(3, 4, 2); scene.add(key);
+const rim = new THREE.DirectionalLight(0x9cc6ff, 0.6); rim.position.set(-2.5, 2.0, -2.5); scene.add(rim);
 
-// Build a flat, clean label face (no vignette, no metalness/roughness)
+// Build a flat label face, but use a shiny material (no vignette)
 function makeFaceMaterial(label, opts={}) {
   const size = 512;
   const c = document.createElement("canvas");
@@ -49,7 +63,7 @@ function makeFaceMaterial(label, opts={}) {
   const ctx = c.getContext("2d");
 
   // Flat background
-  ctx.fillStyle = opts.bg || "#181b22";
+  ctx.fillStyle = opts.bg || "#1b1f27";
   ctx.fillRect(0, 0, size, size);
 
   // Centered label text
@@ -62,23 +76,29 @@ function makeFaceMaterial(label, opts={}) {
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
 
-  // MeshBasicMaterial ignores lights -> crisp, flat result
-  return new THREE.MeshBasicMaterial({ map: tex });
+  // MeshStandardMaterial for gentle shine
+  return new THREE.MeshStandardMaterial({
+    map: tex,
+    metalness: 0.15,     // a touch of metallic sheen
+    roughness: 0.22      // lower = smoother highlight
+  });
 }
 
 // Materials (one per face)
 const materials = faceLabels.map(lbl => makeFaceMaterial(lbl));
-
-// Cube (slightly larger for readability)
 const cube = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.9, 1.9), materials);
 scene.add(cube);
 
+// Initial orientation so you glimpse the bottom face a bit
+cube.rotation.x = -0.22;
+cube.rotation.y = 0.35;
+
 // ------- Feel / motion parameters -------
-let rotationSpeedY = 0.010;   // initial idle spin (indicator)
+let rotationSpeedY = 0.010;   // initial idle spin (indicator only)
 let rotationSpeedX = 0.000;
-const dragSensitivity = 0.006; // how fast cube follows your hand
-let autoRotate = true;         // only at the very start
-let hasUserScrubbed = false;   // once true, idle spin never comes back
+const dragSensitivity = 0.006; // background-drag responsiveness
+let autoRotate = true;         // only before first drag
+let hasUserScrubbed = false;   // once true, idle spin never returns
 // ---------------------------------------
 
 // Animate
@@ -104,7 +124,8 @@ window.addEventListener("resize", () => {
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
 
-// Utility: detect if click is on cube; return {hit, faceIndex, uv} or null
+// Hover / click region: only central 60% (UV 0.2–0.8) is interactive
+let hoverFace = -1;
 function pick(ev) {
   const r = renderer.domElement.getBoundingClientRect();
   pointer.x = ((ev.clientX - r.left) / r.width) * 2 - 1;
@@ -112,36 +133,69 @@ function pick(ev) {
   raycaster.setFromCamera(pointer, camera);
   const hit = raycaster.intersectObject(cube, false)[0];
   if (!hit) return null;
-  const faceIndex = Math.floor(hit.faceIndex / 2); // 0..5
-  const uv = hit.uv || null;                       // per-face UV in [0..1]
-  return { hit, faceIndex, uv };
+  const faceIndex = Math.floor(hit.faceIndex / 2);
+  const uv = hit.uv || null;
+  return { faceIndex, uv };
 }
 
-// Click → only if on cube AND inside central 60% area
-renderer.domElement.addEventListener("click", (ev) => {
-  if (isScrubbing) return; // ignore if a drag just happened
-  const picked = pick(ev);
-  if (!picked) return;
+function setHover(faceIdx) {
+  if (hoverFace === faceIdx) return;
+  // clear previous hover emissive
+  if (hoverFace >= 0) {
+    const m = materials[hoverFace];
+    m.emissive = new THREE.Color(0x000000);
+    m.emissiveIntensity = 0;
+    m.needsUpdate = true;
+  }
+  hoverFace = faceIdx;
+  if (hoverFace >= 0) {
+    const m = materials[hoverFace];
+    // soft “lift” on hover
+    m.emissive = new THREE.Color(0xffffff);
+    m.emissiveIntensity = 0.22;
+    m.needsUpdate = true;
+  }
+  // cursor
+  if (hoverFace >= 0) {
+    document.body.style.cursor = PIXEL_HAND_CURSOR;
+  } else if (isScrubbing) {
+    document.body.style.cursor = 'grabbing';
+  } else {
+    document.body.style.cursor = '';
+  }
+}
 
-  // central region: 20%..80% in both U and V (approx. text area)
-  if (!picked.uv) return;
-  const { x: u, y: v } = picked.uv;
+// Hover detection
+renderer.domElement.addEventListener("mousemove", (ev) => {
+  if (isScrubbing) return; // during scrubbing, ignore hover
+  const res = pick(ev);
+  if (!res || !res.uv) { setHover(-1); return; }
+  const { x: u, y: v } = res.uv;
+  const inCenter = (u > 0.2 && u < 0.8 && v > 0.2 && v < 0.8);
+  setHover(inCenter ? res.faceIndex : -1);
+});
+
+// Click → route (only when hover is active)
+renderer.domElement.addEventListener("click", (ev) => {
+  if (isScrubbing) return;
+  const res = pick(ev);
+  if (!res || !res.uv) return;
+  const { x: u, y: v } = res.uv;
   const inCenter = (u > 0.2 && u < 0.8 && v > 0.2 && v < 0.8);
   if (!inCenter) return;
-
-  const dest = routes[picked.faceIndex];
+  const dest = routes[res.faceIndex];
   if (dest) window.location.href = dest;
 });
 
-// ===== Background drag to rotate the cube =====
+// ===== Background drag to rotate the cube (stop idle forever after first drag) =====
 let isScrubbing = false;
-let lastMoveTime = 0;
-
 function startScrub() {
   isScrubbing = true;
-  autoRotate = false;       // stop idle spin immediately
-  hasUserScrubbed = true;   // never resume idle spin after first drag
+  autoRotate = false;
+  hasUserScrubbed = true; // never resume idle spin
   document.body.style.cursor = 'grabbing';
+  // remove any hover highlight while scrubbing
+  if (hoverFace >= 0) setHover(-1);
 }
 function endScrub() {
   if (!isScrubbing) return;
@@ -150,21 +204,16 @@ function endScrub() {
 }
 
 renderer.domElement.addEventListener('mousedown', (ev) => {
-  const picked = pick(ev);
-  if (!picked) startScrub(); // only start scrubbing if click is outside the cube
+  const res = pick(ev);
+  if (!res) startScrub(); // click on background only
 });
-
 renderer.domElement.addEventListener('mousemove', (ev) => {
   if (!isScrubbing) return;
-  const dx = ev.movementX || 0;
-  const dy = ev.movementY || 0;
-  cube.rotation.y += dx * dragSensitivity;
-  cube.rotation.x += dy * dragSensitivity;
-  lastMoveTime = performance.now();
+  cube.rotation.y += (ev.movementX || 0) * dragSensitivity;
+  cube.rotation.x += (ev.movementY || 0) * dragSensitivity;
 });
-
 addEventListener('mouseup', endScrub);
 renderer.domElement.addEventListener('mouseleave', endScrub);
 
-if (health) health.textContent = "Menu ready ✓ — drag background to rotate";
-console.log("[cube] clean menu cube loaded");
+if (health) health.textContent = "Menu ready ✓ — hover center of a face, or drag background to rotate";
+console.log("[cube] polished minimal cube loaded");
