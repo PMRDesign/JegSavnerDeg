@@ -4,11 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow">
-  <title>The Space I Shape</title>
+  <title>The Space I Shape Turns</title>
   <style>
     :root { color-scheme: dark; }
-    html, body { height: 100%; margin: 0; }
-    body { font-family: system-ui, sans-serif; background:#0f0f12; }
+    html, body { height: 100%; margin: 0; background:#0f0f12; }
     #scene { position: fixed; inset: 0; display:block; }
     .ui {
       position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
@@ -16,97 +15,32 @@
       padding: 10px 14px; border-radius: 12px; font-size: 14px; color: #eaeaea;
       display: flex; gap: 10px; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,.35);
     }
-    .toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
-      background: rgba(30,30,36,.9); color:#fff; padding:8px 12px; border-radius:10px; font-size:13px; display:none; }
-    button { background:#2a2a33; color:#eee; border:1px solid #3a3a46; border-radius:10px; padding:6px 10px; cursor:pointer; }
+    .toast {
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+      background: rgba(30,30,36,.9); color:#fff; padding:8px 12px; border-radius:10px;
+      font-size:13px; display:none;
+    }
+    button {
+      background:#2a2a33; color:#eee; border:1px solid #3a3a46; border-radius:10px; padding:6px 10px; cursor:pointer;
+    }
     button:hover { filter: brightness(1.1); }
-    noscript { color:#fff; position:fixed; inset:auto 0 0 0; text-align:center; padding:12px; background:#a33; }
   </style>
 </head>
 <body>
   <canvas id="scene" aria-label="Interactive 3D box"></canvas>
-  <div class="ui"><span>🖱️ drag = rotate</span><span>🖱️ wheel = zoom</span><span>👆 click a face</span><button id="reset">Center view</button></div>
+  <div class="ui">
+    <span>🖱️ drag = rotate</span>
+    <span>🖱️ wheel = zoom</span>
+    <span>👆 click a face</span>
+    <button id="reset">Center view</button>
+  </div>
   <div id="toast" class="toast" aria-live="assertive"></div>
-  <noscript>JavaScript is required to view the 3D box.</noscript>
 
-  <!-- Classic (non-module) builds from CDN -->
+  <!-- Libraries -->
   <script src="https://unpkg.com/three@0.164.1/build/three.min.js"></script>
   <script src="https://unpkg.com/three@0.164.1/examples/js/controls/OrbitControls.js"></script>
-  <script>
-  (function(){
-    // WebGL check
-    try {
-      var test = document.createElement('canvas').getContext('webgl') || document.createElement('canvas').getContext('experimental-webgl');
-      if (!test) { alert('WebGL seems unavailable in this browser.'); return; }
-    } catch(e) { alert('WebGL failed to start.'); return; }
 
-    const canvas = document.getElementById('scene');
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias:true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setClearColor(0x0f0f12, 1);
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
-    camera.position.set(2.6, 1.8, 3.2);
-
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true; controls.dampingFactor = 0.05;
-    controls.rotateSpeed = 0.6; controls.minDistance = 1.5; controls.maxDistance = 8;
-
-    // Lights
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const key = new THREE.DirectionalLight(0xfff2e0, 1.0); key.position.set(3,4,2); scene.add(key);
-    const rim = new THREE.DirectionalLight(0xbad4ff, 0.7); rim.position.set(-3,2,-3); scene.add(rim);
-
-    // Materials with labels
-    const faceLabels = ["Front","Back","Left","Right","Top","Bottom"];
-    const colors = [0x9aa4ff,0xffb3b3,0x9fe0c6,0xf4d88a,0xcaa8f3,0x86c5f4];
-    function faceMat(label, color){
-      const mat = new THREE.MeshStandardMaterial({ color: color, metalness:0.05, roughness:0.35 });
-      const size = 256, c = document.createElement('canvas'); c.width = c.height = size;
-      const ctx = c.getContext('2d');
-      ctx.fillStyle = '#00000022'; ctx.fillRect(0,0,size,size);
-      ctx.fillStyle = '#ffffffcc'; ctx.font = 'bold 32px system-ui, sans-serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, size/2, size/2);
-      const tex = new THREE.Texture(c); tex.needsUpdate = true;
-      mat.map = tex; return mat;
-    }
-    const materials = faceLabels.map((l,i)=>faceMat(l,colors[i]));
-    const cube = new THREE.Mesh(new THREE.BoxGeometry(1.6,1.6,1.6), materials);
-    scene.add(cube);
-
-    let autoRotate = true;
-    function animate(){ requestAnimationFrame(animate); if(autoRotate) cube.rotation.y += 0.005; controls.update(); renderer.render(scene,camera); }
-    animate();
-    controls.addEventListener('start', ()=> autoRotate = false);
-    controls.addEventListener('end', ()=> setTimeout(()=> autoRotate = true, 1200));
-
-    window.addEventListener('resize', ()=>{
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix();
-    });
-
-    // Click detection
-    const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
-    const toast = document.getElementById('toast');
-    function showToast(t){ toast.textContent=t; toast.style.display='block'; clearTimeout(showToast._t); showToast._t=setTimeout(()=>toast.style.display='none',1400); }
-    renderer.domElement.addEventListener('click', function(ev){
-      const rect = renderer.domElement.getBoundingClientRect();
-      pointer.x = ((ev.clientX-rect.left)/rect.width)*2 - 1;
-      pointer.y = -((ev.clientY-rect.top)/rect.height)*2 + 1;
-      raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObject(cube, false)[0];
-      if(hit){
-        const faceIndex = Math.floor(hit.faceIndex/2);
-        showToast('You clicked: ' + faceLabels[faceIndex]);
-      }
-    });
-
-    document.getElementById('reset').addEventListener('click', ()=>{
-      controls.reset(); camera.position.set(2.6,1.8,3.2);
-    });
-  })();
-  </script>
+  <!-- Your cube logic -->
+  <script src="cube.js"></script>
 </body>
 </html>
