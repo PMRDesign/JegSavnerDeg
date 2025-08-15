@@ -1,5 +1,5 @@
 // cube.js — transparent renderer over gradient, menu faces, hover cursor,
-// background/cube-edge drag with inertia, touch support, zoom limits exposed.
+// background/cube-edge drag with inertia, and mobile tap-to-open.
 const THREE = await import('https://esm.sh/three@0.179.1');
 const { OrbitControls } = await import('https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js');
 
@@ -19,16 +19,15 @@ const routes = {
 };
 // ---------------------------------
 
-// Use your uploaded cursor for the clickable center
+// Use your uploaded cursor for the clickable center (desktop hover)
 const CLICK_CURSOR = "url('./assets/cursor.svg') 6 2, pointer";
 
 // ---------- ZOOM LIMITS (wheel zoom) ----------
-// Camera distance clamps (hard stops) while wheel-zooming.
-const minZoomDistance = 2.5;   // zoom-in limit (closer is blocked)
-const maxZoomDistance = 22.5;  // zoom-out limit (farther is blocked)
+const minZoomDistance = 1.5;   // absolute zoom-in stop
+const maxZoomDistance = 15.0;  // absolute zoom-out stop
 // ---------------------------------------------
 
-// Renderer — transparent so CSS gradient and starfield show through
+// Renderer — transparent so CSS gradient/starfield show through
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -37,9 +36,7 @@ renderer.setClearColor(0x000000, 0); // fully transparent
 // Scene & camera
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-
-// Initial camera position (feel free to tune)
-camera.position.set(3.2, 2.0, 4.6);
+camera.position.set(3.2, 2.0, 4.6); // initial camera position
 
 // Controls: wheel zoom only; we rotate the cube (not the camera)
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -172,7 +169,7 @@ function pick(evOrTouch) {
   return { faceIndex, uv };
 }
 
-// Hover: only change cursor when over the central 60% of a face
+// Hover (desktop): only change cursor when over the central 60% of a face
 renderer.domElement.addEventListener("mousemove", (ev) => {
   if (isScrubbing) return;
   const p = pick(ev);
@@ -185,7 +182,7 @@ renderer.domElement.addEventListener("mousemove", (ev) => {
   document.body.style.cursor = inCenter ? CLICK_CURSOR : "";
 });
 
-// Click → route (only if over central 60%)
+// Click (desktop) → route (only if over central 60%)
 renderer.domElement.addEventListener("click", (ev) => {
   if (isScrubbing) return; // ignore if we were dragging
   const p = pick(ev);
@@ -250,57 +247,120 @@ function endScrub() {
 addEventListener("mouseup", endScrub);
 renderer.domElement.addEventListener("mouseleave", endScrub);
 
-// ===== Touch support (mirrors mouse behavior) =====
-let lastTouch = null;
+// ===== Touch support (tap to open, drag to rotate) =====
+let lastTouch = null;       // { x, y, time }
+let tapCandidate = null;    // { faceIndex, startX, startY, startTime }
+const TAP_MOVE_MAX = 12;    // px — movement threshold to still count as tap
+const TAP_TIME_MAX = 450;   // ms — time threshold to still count as tap
 
 renderer.domElement.addEventListener('touchstart', (ev) => {
   if (!ev.touches || ev.touches.length === 0) return;
   const t = ev.touches[0];
+  const now = performance.now();
 
+  // Hit test at touch start
   const p = pick(t);
-  let startDrag = false;
-  if (!p) startDrag = true;
-  else if (!p.uv) startDrag = true;
-  else {
-    const { x: u, y: v } = p.uv;
-    const inCenter = (u > 0.2 && u < 0.8 && v > 0.2 && v < 0.8);
-    startDrag = !inCenter; // tap-drag edges/background to rotate
-  }
 
-  if (startDrag) {
+  if (!p || !p.uv) {
+    // Background or no UV → begin drag
     isScrubbing = true;
     inertiaActive = false;
     showIntroSpin = false;
-    lastTouch = { x: t.clientX, y: t.clientY, time: performance.now() };
+    lastTouch = { x: t.clientX, y: t.clientY, time: now };
+    tapCandidate = null; // not a tap
+  } else {
+    const { x: u, y: v } = p.uv;
+    const inCenter = (u > 0.2 && u < 0.8 && v > 0.2 && v < 0.8);
+
+    if (inCenter) {
+      // Potential tap to open — don't start drag yet
+      isScrubbing = false;
+      inertiaActive = false;
+      showIntroSpin = false;
+      lastTouch = { x: t.clientX, y: t.clientY, time: now };
+      tapCandidate = {
+        faceIndex: p.faceIndex,
+        startX: t.clientX,
+        startY: t.clientY,
+        startTime: now
+      };
+    } else {
+      // Edge of face → begin drag
+      isScrubbing = true;
+      inertiaActive = false;
+      showIntroSpin = false;
+      lastTouch = { x: t.clientX, y: t.clientY, time: now };
+      tapCandidate = null;
+    }
   }
+
+  // Prevent page scroll while on the canvas
   ev.preventDefault();
 }, { passive: false });
 
 renderer.domElement.addEventListener('touchmove', (ev) => {
-  if (!isScrubbing || !ev.touches || ev.touches.length === 0) return;
+  if (!ev.touches || ev.touches.length === 0) return;
   const t = ev.touches[0];
   const now = performance.now();
+
   const dx = t.clientX - (lastTouch?.x ?? t.clientX);
   const dy = t.clientY - (lastTouch?.y ?? t.clientY);
 
-  const k = dragSensitivity;
-  cube.rotation.y += dx * k;
-  cube.rotation.x += dy * k;
+  // If we had a tap candidate but the finger moved too much, cancel the tap and start a drag
+  if (tapCandidate) {
+    const moved = Math.hypot(t.clientX - tapCandidate.startX, t.clientY - tapCandidate.startY);
+    if (moved > TAP_MOVE_MAX) {
+      // Start rotating instead
+      isScrubbing = true;
+      tapCandidate = null;
+    }
+  }
 
-  // approximate per-frame velocity
-  const dt = Math.max(1, (now - (lastTouch?.time ?? now)));
-  vY = (dx * k) * (16 / dt);
-  vX = (dy * k) * (16 / dt);
+  if (isScrubbing) {
+    const k = dragSensitivity;
+    cube.rotation.y += dx * k;
+    cube.rotation.x += dy * k;
+
+    // velocity for inertia (normalized a bit)
+    const dt = Math.max(1, (now - (lastTouch?.time ?? now)));
+    vY = (dx * k) * (16 / dt);
+    vX = (dy * k) * (16 / dt);
+  }
 
   lastTouch = { x: t.clientX, y: t.clientY, time: now };
   ev.preventDefault();
 }, { passive: false });
 
 function endTouch(ev) {
-  if (!isScrubbing) return;
-  isScrubbing = false;
-  // Always give a bit of glide on touch release
-  inertiaActive = true;
+  const now = performance.now();
+
+  // If we have a valid tap candidate, small movement and short time → navigate
+  if (tapCandidate) {
+    const moved = Math.hypot(
+      (lastTouch?.x ?? tapCandidate.startX) - tapCandidate.startX,
+      (lastTouch?.y ?? tapCandidate.startY) - tapCandidate.startY
+    );
+    const elapsed = now - tapCandidate.startTime;
+
+    if (moved <= TAP_MOVE_MAX && elapsed <= TAP_TIME_MAX) {
+      const dest = routes[tapCandidate.faceIndex];
+      tapCandidate = null;
+      if (dest) {
+        window.location.href = dest; // navigate
+        ev && ev.preventDefault();
+        return;
+      }
+    }
+    // Otherwise: no nav; if we were dragging, we'll start inertia below
+    tapCandidate = null;
+  }
+
+  // If we were scrubbing (dragging), start inertia glide
+  if (isScrubbing) {
+    isScrubbing = false;
+    inertiaActive = true;
+  }
+
   lastTouch = null;
   ev && ev.preventDefault();
 }
@@ -309,85 +369,4 @@ renderer.domElement.addEventListener('touchcancel', endTouch, { passive: false }
 
 // (Optional) tiny status for your own testing
 if (health) health.textContent = "";
-console.log("[cube] ready: transparent renderer, star-ready CSS, inertia + touch, zoom limits exposed");
-
-// ===== Bilinear corner weights (Kongsvinger, Berlin, Rio, Sydney) =====
-const wTL = document.getElementById('w-tl');
-const wTR = document.getElementById('w-tr');
-const wBL = document.getElementById('w-bl');
-const wBR = document.getElementById('w-br');
-
-// Helper: clamp 0..1
-const clamp01 = v => Math.max(0, Math.min(1, v));
-
-function updateCornerWeightsFromClient(clientX, clientY) {
-  if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-
-  // Normalize cursor to [0,1] across the interactive canvas area
-  const x = clamp01((clientX - rect.left) / rect.width);
-  const y = clamp01((clientY - rect.top) / rect.height);
-
-  // Bilinear weights
-  let k = (1 - x) * (1 - y); // Kongsvinger (top-left)
-  let b = x * (1 - y);       // Berlin (top-right)
-  let r = (1 - x) * y;       // Rio (bottom-left)
-  let s = x * y;             // Sydney (bottom-right)
-
-  // Scale to 0..100 and round to ints
-  let K = Math.round(k * 100);
-  let B = Math.round(b * 100);
-  let R = Math.round(r * 100);
-  let S = Math.round(s * 100);
-
-  // Optional: ensure exact sum = 100 (fix rounding residual on largest)
-  const sum = K + B + R + S;
-  let residual = 100 - sum;
-  if (residual !== 0) {
-    // find index of largest weight
-    const arr = [K, B, R, S];
-    let maxIdx = 0;
-    for (let i = 1; i < 4; i++) if (arr[i] > arr[maxIdx]) maxIdx = i;
-    arr[maxIdx] += residual;
-    [K, B, R, S] = arr;
-  }
-
-  // Update tiny labels (no % glyphs)
-  if (wTL) wTL.textContent = `Kongsvinger ${K}`;
-  if (wTR) wTR.textContent = `Berlin ${B}`;
-  if (wBL) wBL.textContent = `Rio ${R}`;
-  if (wBR) wBR.textContent = `Sydney ${S}`;
-}
-
-// Mouse: update on move, freeze on leave
-renderer.domElement.addEventListener('mousemove', (ev) => {
-  updateCornerWeightsFromClient(ev.clientX, ev.clientY);
-}, { passive: true });
-
-// Freeze last values on mouseleave (do nothing)
-// If you prefer clearing, uncomment below:
-// renderer.domElement.addEventListener('mouseleave', () => {
-//   if (wTL) wTL.textContent = 'Kongsvinger –';
-//   if (wTR) wTR.textContent = 'Berlin –';
-//   if (wBL) wBL.textContent = 'Rio –';
-//   if (wBR) wBR.textContent = 'Sydney –';
-// }, { passive: true });
-
-// Touch: mirror mouse behavior
-renderer.domElement.addEventListener('touchmove', (ev) => {
-  if (!ev.touches || ev.touches.length === 0) return;
-  const t = ev.touches[0];
-  updateCornerWeightsFromClient(t.clientX, t.clientY);
-  ev.preventDefault();
-}, { passive: false });
-
-// Freeze on touchend/cancel (no clear)
-renderer.domElement.addEventListener('touchend', () => {}, { passive: true });
-renderer.domElement.addEventListener('touchcancel', () => {}, { passive: true });
-
-// Initialize at center so sum=100 on load (50/50 splits)
-(function initWeightsAtCenter(){
-  const rect = canvas.getBoundingClientRect();
-  updateCornerWeightsFromClient(rect.left + rect.width/2, rect.top + rect.height/2);
-})();
-
+console.log("[cube] ready: mobile tap-to-open + inertia, desktop hover cursor, transparent renderer");
