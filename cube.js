@@ -97,7 +97,7 @@ scene.add(cube);
 // cube.rotation.set(-0.15, 0.35, 0);  // see a bit of top + right side
 // cube.rotation.set(0,      0.25, 0); // straight, turned a little right
 // cube.rotation.set(0,      0,     0); // perfectly straight on
-cube.rotation.set(0, 5, 0); // current choice: turned ~2 rad (~114°) around Y
+cube.rotation.set(-0.3, 5, 0); // current choice: turned ~2 rad (~114°) around Y
 // ----------------------------------------------------
 
 // -------- Feel / motion parameters --------
