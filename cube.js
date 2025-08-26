@@ -63,7 +63,7 @@ function makeFaceMaterial(label) {
   ctx.fillRect(0, 0, size, size);
 
   ctx.fillStyle = "#eaeaf5";
-  ctx.font = "600 58px 'Source Sans Pro', sans-serif";
+  ctx.font = "400 58px 'Source Sans Pro', sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(label, size / 2, size / 2);
