@@ -5,21 +5,28 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>The Space I Shape Turns</title>
   <link rel="icon" href="data:,"><!-- silence favicon 404 -->
+
+  <!-- Fonts for cube faces + corner numbers -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&family=Source+Sans+Pro:wght@400;600&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <!-- Bilinear corner weights overlay -->
-<div id="weights">
-  <div class="w tl" id="w-tl">Kongsvinger –</div>
-  <div class="w tr" id="w-tr">Berlin –</div>
-  <div class="w bl" id="w-bl">Rio –</div>
-  <div class="w br" id="w-br">Sydney –</div>
-</div>
-<canvas id="stars" aria-hidden="true"></canvas>
-<canvas id="scene" aria-label="Interactive 3D box"></canvas>
+  <div id="weights">
+    <div class="w tl" id="w-tl">Kongsvinger –</div>
+    <div class="w tr" id="w-tr">Berlin –</div>
+    <div class="w bl" id="w-bl">Rio –</div>
+    <div class="w br" id="w-br">Sydney –</div>
+  </div>
 
-<!-- Load the starfield first, then your cube -->
-<script type="module" src="./starfield.js?v=1"></script>
-<script type="module" src="./cube.js?v=3"></script>
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <canvas id="scene" aria-label="Interactive 3D box"></canvas>
+
+  <!-- Load the starfield first, then your cube -->
+  <script type="module" src="./starfield.js?v=1"></script>
+  <script type="module" src="./cube.js?v=12"></script>
 </body>
 </html>
