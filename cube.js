@@ -6,15 +6,15 @@ const { OrbitControls } = await import('https://esm.sh/three@0.179.1/examples/js
 
 const canvas = document.getElementById('scene');
 
-// ---------- MENU CONFIG (OFFRER) ----------
+// ---------- MENU CONFIG (OFFRER reordered) ----------
 // Faces: 0=Front, 1=Back, 2=Left, 3=Right, 4=Top, 5=Bottom
-const faceLabels = ["Form", "Echoes", "Flow", "Rituals", "Origin", "Resonance"];
+const faceLabels = ["Form", "Echoes", "Origin", "Rituals", "Flow", "Resonance"];
 const routes = {
   0: "form/",       // Front
   1: "echoes/",     // Back
-  2: "flow/",       // Left
+  2: "origin/",     // Left
   3: "rituals/",    // Right
-  4: "origin/",     // Top
+  4: "flow/",       // Top
   5: "resonance/"   // Bottom
 };
 // ------------------------------------------
