@@ -47,12 +47,13 @@ body::before {
 #scene {
   touch-action: none;
 }
+
 /* Corner weight readouts (very small, unobtrusive) */
 #weights {
   position: fixed;
   inset: 0;
   pointer-events: none; /* never blocks cube interaction */
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-family: 'Source Code Pro', monospace; /* updated */
   font-size: 10px; /* make it tiny */
   line-height: 1.2;
   color: #b7c9ff;  /* soft, cool tone */
@@ -71,4 +72,3 @@ body::before {
 @media (max-width: 420px) {
   #weights { font-size: 11px; }
 }
-
