@@ -302,6 +302,28 @@ const clamp01 = v => Math.max(0, Math.min(1, v));
 function updateCornerWeightsFromClient(clientX, clientY) {
   const rect = renderer.domElement.getBoundingClientRect();
 
+  // ---- Lat/Lon overlay ----
+const geoEl = document.getElementById('geo');
+const clamp01 = v => Math.max(0, Math.min(1, v));
+
+function updateGeoFromClient(clientX, clientY) {
+  if (!geoEl) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+
+  // Normalize pointer within canvas
+  const x = clamp01((clientX - rect.left) / rect.width);   // 0..1 left→right
+  const y = clamp01((clientY - rect.top)  / rect.height);  // 0..1 top→bottom
+
+  // Map to lon [-180,180], lat [90,-90]
+  const lon = x * 360 - 180;
+  const lat = 90 - y * 180;
+
+  // Format
+  const fmt = n => `${n.toFixed(2)}°`;
+  geoEl.textContent = `Lat: ${fmt(lat)}   Lon: ${fmt(lon)}`;
+}
+
+
   // A) Snap on label hover/touch
   const SNAP_PAD = 10; // px
   const inRect = (el) => {
@@ -351,16 +373,20 @@ function updateCornerWeightsFromClient(clientX, clientY) {
 // Update numbers on move (mouse/touch)
 renderer.domElement.addEventListener('mousemove', (ev) => {
   updateCornerWeightsFromClient(ev.clientX, ev.clientY);
+  updateGeoFromClient(ev.clientX, ev.clientY);   // NEW
 }, { passive: true });
 
 renderer.domElement.addEventListener('touchmove', (ev) => {
   if (!ev.touches || ev.touches.length === 0) return;
   const t = ev.touches[0];
   updateCornerWeightsFromClient(t.clientX, t.clientY);
+  updateGeoFromClient(t.clientX, t.clientY);     // NEW
 }, { passive: true });
 
 // Initialize centered (50/50 split)
-(function initWeightsAtCenter(){
+(function initOverlaysAtCenter(){
   const r = renderer.domElement.getBoundingClientRect();
-  updateCornerWeightsFromClient(r.left + r.width/2, r.top + r.height/2);
+  const cx = r.left + r.width/2, cy = r.top + r.height/2;
+  updateCornerWeightsFromClient(cx, cy);
+  updateGeoFromClient(cx, cy);   // NEW
 })();
