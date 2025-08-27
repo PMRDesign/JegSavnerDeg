@@ -83,7 +83,7 @@ const cube = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.9, 1.9), materials);
 scene.add(cube);
 
 // Starting pose (slight up-tilt shows a bit of the bottom; tweak to taste)
-cube.rotation.set(-0.25, 0, 0);
+cube.rotation.set(0.25, 0, 0);
 
 // -------- Feel / motion ----------
 let showIntroSpin = true;   // first-time hint spin
