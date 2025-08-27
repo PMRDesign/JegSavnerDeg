@@ -13,9 +13,9 @@ const routes = {
   0: "form/",       // Front
   1: "echoes/",     // Back
   2: "origin/",     // Left
-  3: "rituals/",    // Right
+  3: "resonance/",    // Right
   4: "flow/",       // Top
-  5: "resonance/"   // Bottom
+  5: "rituals/"   // Bottom
 };
 // ------------------------------------------
 
