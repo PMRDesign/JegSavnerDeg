@@ -1,5 +1,5 @@
 // cube.js — OFFRER cube, Source Sans Pro faces, drag+inertia, mobile tap,
-// corner weights with label/corner snap, transparent over your background.
+// corner weights (with snap) + lat/lon overlay, transparent renderer.
 
 const THREE = await import('https://esm.sh/three@0.179.1');
 const { OrbitControls } = await import('https://esm.sh/three@0.179.1/examples/jsm/controls/OrbitControls.js');
@@ -13,9 +13,9 @@ const routes = {
   0: "form/",       // Front
   1: "echoes/",     // Back
   2: "origin/",     // Left
-  3: "resonance/",    // Right
+  3: "resonance/",  // Right
   4: "flow/",       // Top
-  5: "rituals/"   // Bottom
+  5: "rituals/"     // Bottom
 };
 // ------------------------------------------
 
@@ -63,7 +63,7 @@ function makeFaceMaterial(label) {
   ctx.fillRect(0, 0, size, size);
 
   ctx.fillStyle = "#eaeaf5";
-  ctx.font = "400 58px 'Source Sans Pro', sans-serif";
+  ctx.font = "400 58px 'Source Sans Pro', sans-serif"; // weight 400 as in your version
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(label, size / 2, size / 2);
@@ -82,7 +82,7 @@ const materials = faceLabels.map(lbl => makeFaceMaterial(lbl));
 const cube = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.9, 1.9), materials);
 scene.add(cube);
 
-// Starting pose (slight up-tilt shows a bit of the bottom; tweak to taste)
+// Starting pose (you can switch to -0.25,0,0 for front+top)
 cube.rotation.set(0, 2, 0);
 
 // -------- Feel / motion ----------
@@ -148,7 +148,6 @@ function pick(evOrTouch) {
   const uv = hit.uv || null; // 0..1 across that face
   return { faceIndex, uv };
 }
-// -------------------------------
 
 // Desktop hover cursor (center 60%)
 renderer.domElement.addEventListener("mousemove", (ev) => {
@@ -292,39 +291,19 @@ function endTouch(ev) {
 renderer.domElement.addEventListener('touchend', endTouch,   { passive: false });
 renderer.domElement.addEventListener('touchcancel', endTouch, { passive: false });
 
-// ===== Bilinear corner weights with snapping =====
+// ===== Overlays: corner weights + lat/lon =====
 const wTL = document.getElementById('w-tl');
 const wTR = document.getElementById('w-tr');
 const wBL = document.getElementById('w-bl');
 const wBR = document.getElementById('w-br');
+const geoEl = document.getElementById('geo');
+
 const clamp01 = v => Math.max(0, Math.min(1, v));
 
 function updateCornerWeightsFromClient(clientX, clientY) {
   const rect = renderer.domElement.getBoundingClientRect();
 
-  // ---- Lat/Lon overlay ----
-const geoEl = document.getElementById('geo');
-const clamp01 = v => Math.max(0, Math.min(1, v));
-
-function updateGeoFromClient(clientX, clientY) {
-  if (!geoEl) return;
-  const rect = renderer.domElement.getBoundingClientRect();
-
-  // Normalize pointer within canvas
-  const x = clamp01((clientX - rect.left) / rect.width);   // 0..1 left→right
-  const y = clamp01((clientY - rect.top)  / rect.height);  // 0..1 top→bottom
-
-  // Map to lon [-180,180], lat [90,-90]
-  const lon = x * 360 - 180;
-  const lat = 90 - y * 180;
-
-  // Format
-  const fmt = n => `${n.toFixed(2)}°`;
-  geoEl.textContent = `Lat: ${fmt(lat)}   Lon: ${fmt(lon)}`;
-}
-
-
-  // A) Snap on label hover/touch
+  // A) Snap on label hover/touch (padded hitboxes)
   const SNAP_PAD = 10; // px
   const inRect = (el) => {
     if (!el) return false;
@@ -370,23 +349,39 @@ function updateGeoFromClient(clientX, clientY) {
   }
 }
 
-// Update numbers on move (mouse/touch)
+function updateGeoFromClient(clientX, clientY) {
+  if (!geoEl) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+
+  const x = clamp01((clientX - rect.left) / rect.width);   // 0..1 left→right
+  const y = clamp01((clientY - rect.top)  / rect.height);  // 0..1 top→bottom
+
+  // lon: -180..+180, lat: +90..-90
+  const lon = x * 360 - 180;
+  const lat = 90 - y * 180;
+
+  const fmt = n => `${n.toFixed(2)}°`;
+  geoEl.textContent = `Lat: ${fmt(lat)}   Lon: ${fmt(lon)}`;
+}
+
+// Mouse move: update both overlays
 renderer.domElement.addEventListener('mousemove', (ev) => {
   updateCornerWeightsFromClient(ev.clientX, ev.clientY);
-  updateGeoFromClient(ev.clientX, ev.clientY);   // NEW
+  updateGeoFromClient(ev.clientX, ev.clientY);
 }, { passive: true });
 
+// Touch move: update both overlays
 renderer.domElement.addEventListener('touchmove', (ev) => {
   if (!ev.touches || ev.touches.length === 0) return;
   const t = ev.touches[0];
   updateCornerWeightsFromClient(t.clientX, t.clientY);
-  updateGeoFromClient(t.clientX, t.clientY);     // NEW
+  updateGeoFromClient(t.clientX, t.clientY);
 }, { passive: true });
 
-// Initialize centered (50/50 split)
+// Initialize overlays at canvas center
 (function initOverlaysAtCenter(){
   const r = renderer.domElement.getBoundingClientRect();
   const cx = r.left + r.width/2, cy = r.top + r.height/2;
   updateCornerWeightsFromClient(cx, cy);
-  updateGeoFromClient(cx, cy);   // NEW
+  updateGeoFromClient(cx, cy);
 })();
