@@ -70,7 +70,7 @@ body::before {
 
 #cube {
   position: fixed;
-  top: 18px;
+  top: 50px;
   left: 50%;
   transform: translateX(-50%);
   pointer-events: none; /* don't block interactions */
