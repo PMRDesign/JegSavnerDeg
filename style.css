@@ -15,6 +15,62 @@ body {
     ) fixed;
 }
 
+/* MENU LOOK & FEEL */
+:root{
+  --accent: #39ff14;                /* your green */
+  --muted:  rgba(255,255,255,.78);  /* caption tone */
+}
+
+.side-menu{
+  position: fixed;
+  left: clamp(16px, 4vw, 56px);
+  top: 50%;
+  transform: translateY(-42%);      /* caption sits above the list */
+  z-index: 5;
+  font: inherit;                    /* matches your lat/long font & size */
+  pointer-events: auto;
+  user-select: none;
+}
+
+.menu-caption{
+  max-width: min(42ch, 44vw);
+  margin: 0 0 .75rem 0;
+  line-height: 1.25;
+  color: var(--muted);
+  letter-spacing: .01em;
+  opacity: 0;
+  transform: translateX(-8px);
+  filter: blur(2px);
+  transition:
+    opacity .24s ease-out,
+    transform .24s ease-out,
+    filter .24s ease-out;
+  will-change: opacity, transform, filter;
+}
+
+.menu-list ul{ margin:0; padding:0; list-style:none; }
+.menu-item{
+  display:block;
+  background:none; border:0;
+  padding:.15rem 0; margin:.25rem 0;
+  text-align:left; font:inherit;
+  color:#fff; letter-spacing:.03em;
+  cursor:pointer; outline-offset:4px;
+  transition: color .16s ease-out, text-shadow .16s ease-out;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible{
+  color: var(--accent);
+  text-shadow: 0 0 .35rem color-mix(in oklab, var(--accent), transparent 70%);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .menu-caption, .menu-item{ transition:none }
+  .menu-caption{ filter:none }
+}
+
 /* Optional extra falloff; makes corners a touch deeper.
    Remove this block if you want only the gradient above. */
 body::before {
