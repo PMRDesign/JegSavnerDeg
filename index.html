@@ -38,6 +38,53 @@
     </ul>
   </nav>
 </div>
+    <!-- INLINE SCRIPT (menu behaviour) -->
+  <script>
+    (() => {
+      const caption = document.getElementById('menu-caption');
+      const items   = [...document.querySelectorAll('.menu-item')];
+
+      let hoverTimer = null;
+      const DELAY_IN  = 140;
+      const DELAY_OUT = 90;
+
+      function show(el){
+        const word = el.textContent.trim();
+        caption.textContent = `${word} — ${el.dataset.sentence}`;
+        caption.style.opacity   = '1';
+        caption.style.transform = 'translateX(0)';
+        caption.style.filter    = 'blur(0px)';
+      }
+      function hide(){
+        caption.style.opacity   = '0';
+        caption.style.transform = 'translateX(-8px)';
+        caption.style.filter    = 'blur(2px)';
+      }
+
+      items.forEach(btn => {
+        btn.addEventListener('mouseenter', () => {
+          clearTimeout(hoverTimer);
+          hoverTimer = setTimeout(() => show(btn), DELAY_IN);
+        });
+        btn.addEventListener('mouseleave', () => {
+          clearTimeout(hoverTimer);
+          hoverTimer = setTimeout(hide, DELAY_OUT);
+        });
+        btn.addEventListener('focus', () => show(btn));
+        btn.addEventListener('blur', hide);
+
+        // Touch support
+        btn.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          if (caption.style.opacity === '1' && caption.textContent.startsWith(btn.textContent.trim())) {
+            hide();
+          } else {
+            show(btn);
+          }
+        });
+      });
+    })();
+  </script>
   
   <canvas id="stars" aria-hidden="true"></canvas>
   <canvas id="scene" aria-label="Interactive 3D box"></canvas>
