@@ -8,11 +8,11 @@ const canvas = document.getElementById('scene');
 
 // ---------- MENU CONFIG (OFFRER reordered) ----------
 // Faces: 0=Front, 1=Back, 2=Left, 3=Right, 4=Top, 5=Bottom
-const faceLabels = ["Form", "Echoes", "Origin", "Resonance", "Flow", "Rituals"];
+const faceLabels = ["Form", "Echoes", "Prism", "Resonance", "Flow", "Rituals"];
 const routes = {
   0: "form/",       // Front
   1: "echoes/",     // Back
-  2: "origin/",     // Left
+  2: "prism/",     // Left
   3: "resonance/",  // Right
   4: "flow/",       // Top
   5: "rituals/"     // Bottom
