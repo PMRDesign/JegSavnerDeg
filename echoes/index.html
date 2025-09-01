@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Echoes — OFFRER</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+    .frame {
+      width: min(92vw, 1200px);
+      aspect-ratio: 16 / 9;
+      background: rgba(0,0,0,.35);
+      border-radius: 12px; 
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    }
+    .frame iframe, .frame video { width:100%; height:100%; display:block; }
+    .bar { max-width: min(92vw, 1200px); margin: 14px auto 0; text-align: center; }
+    .back { color:#b7c9ff; text-decoration:none; font: 12px system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="frame" aria-label="Echoes video">
+      <iframe
+        src="https://www.youtube.com/embed/9Rv-fbLF3gc"
+        title="Echoes"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        allowfullscreen
+      ></iframe>
+    </div>
+    <div class="bar">
+      <a class="back" href="../">← back to the box</a>
+    </div>
+  </main>
+</body>
+</html>
