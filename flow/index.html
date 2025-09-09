@@ -7,17 +7,32 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../style.css">
   <style>
-    body { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; padding: 20px; }
+    body { 
+      display:flex; 
+      flex-direction:column; 
+      align-items:center; 
+      justify-content:flex-start; 
+      min-height:100vh; 
+      padding: 20px; 
+      background:#0b0e17;
+    }
+
     .frame {
-      position: relative;
       width: min(92vw, 1200px);
       aspect-ratio: 16 / 9;
       background: rgba(0,0,0,.35);
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 20px 60px rgba(0,0,0,.5);
+      position: relative;
     }
-    .frame iframe, .frame video { width:100%; height:100%; display:block; }
+
+    .frame iframe { 
+      width:100%; 
+      height:100%; 
+      border:0; 
+      display:block; 
+    }
 
     /* Top caption inside the video frame */
     .caption-top {
@@ -34,6 +49,7 @@
       padding: 6px 10px;
       border-radius: 6px;
       white-space: nowrap;
+      z-index: 2;
     }
 
     /* Description under video */
@@ -53,10 +69,21 @@
       margin: 12px auto 0;
       text-align: center;
     }
+
     .back {
       color:#b7c9ff; 
       text-decoration:none; 
       font: 12px system-ui, sans-serif;
+    }
+
+    .art-image {
+      display:block; 
+      margin:20px auto; 
+      max-width:700px; 
+      width:100%; 
+      height:auto; 
+      border-radius:8px; 
+      box-shadow:0 4px 12px rgba(0,0,0,0.15);
     }
   </style>
 </head>
@@ -67,7 +94,6 @@
       <iframe
         src="https://www.youtube.com/embed/PxwALs4HGxU"
         title="Flow"
-        frameborder="0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowfullscreen
       ></iframe>
@@ -76,18 +102,20 @@
     <div class="description">
       In <em>Spectrum of Possible</em>, sound becomes sculpture. Layers of voice and distortion sketch out shifting terrains. 
       This fragment invites you to step into the cracks where story and reality collide. 
-      This is a smaller piece of <em>I am not Hercules</em> by RanterBanter.
+      This is a smaller piece of <em>I am not Hercules</em> by RanterBanter. If you want more info, send an email to 
+  <a href="mailto:permagnus.roenning@gmail.com">permagnus.roenning@gmail.com</a>.
     </div>
 
     <div class="bar">
       <a class="back" href="../">← back to the box</a>
     </div>
-  <!-- Centered image under video -->
-  <img
-    src="https://raw.githubusercontent.com/PMRDesign/JegSavnerDeg/main/assets/RanterBanter-Im%20Not%20Hercules.jpg"
-    alt="RanterBanter – I'm Not Hercules"
-    style="display:block; margin:20px auto; max-width:700px; width:100%; height:auto; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.15);"
-  />
+
+    <!-- Centered image under video -->
+    <img
+      src="https://raw.githubusercontent.com/PMRDesign/JegSavnerDeg/main/assets/RanterBanter-Im%20Not%20Hercules.jpg"
+      alt="RanterBanter – I'm Not Hercules"
+      class="art-image"
+    />
   </main>
 </body>
 </html>
